@@ -1,19 +1,77 @@
+# =====================================================================
+# Python / FastAPI / Backend
+# =====================================================================
 __pycache__/
 *.py[cod]
 *$py.class
-
-# PyInstaller / Build
-build/
-dist/
 *.spec
 
-# Ambientes virtuais
+# PyInstaller / Build
+dist/
+build/
+
+# Ambientes virtuais Python
 .venv/
 venv/
 env/
 ENV/
 
-# IDEs
-.vscode/
+# =====================================================================
+# Flutter & Dart (Frontend / Mobile)
+# =====================================================================
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub/
+**/.pub-cache/
+**/build/
+**/coverage/
+**/.widget_preview/
+**/doc/api/
+**/.last_build_id
+
+# Símbolos e ofuscação
+app.*.symbols
+app.*.map.json
+
+# =====================================================================
+# Android / Gradle
+# =====================================================================
+**/.gradle/
+**/local.properties
+**/gradle-wrapper.jar
+**/.cxx/
+**/captures/
+**/GeneratedPluginRegistrant.java
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Chaves e credenciais Android (segurança)
+**/key.properties
+**/*.keystore
+**/*.jks
+
+# =====================================================================
+# iOS / macOS
+# =====================================================================
+**/.DS_Store
+**/.swiftpm/
+**/Pods/
+**/.symlinks/
+
+# =====================================================================
+# IDEs & Editores (VS Code, Android Studio, IntelliJ)
+# =====================================================================
 .idea/
+**/.idea/
+*.iml
+**/*.iml
+*.ipr
+*.iws
+.vscode/
+**/.vscode/
 *.swp
+*.class
+*.log
+.history
