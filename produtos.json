@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "nome": "Smartphone Galaxy A15",
+    "preco": 1199.0,
+    "descricao": "Tela 6.5 Super AMOLED, 128GB, 4GB RAM, Bateria 5000mAh",
+    "disponivel": true
+  },
+  {
+    "id": 2,
+    "nome": "Fone de Ouvido Bluetooth JBL",
+    "preco": 249.9,
+    "descricao": "Cancelamento de ruído passivo, até 30h de bateria",
+    "disponivel": true
+  },
+  {
+    "id": 3,
+    "nome": "Smartwatch Fit Pulse",
+    "preco": 389.0,
+    "descricao": "Monitor cardíaco, oxímetro, GPS integrado e resistência à água",
+    "disponivel": false
+  },
+  {
+    "id": 4,
+    "nome": "Carregador Portátil Power Bank 20000mAh",
+    "preco": 159.9,
+    "descricao": "2 saídas USB-A e 1 USB-C Power Delivery 20W",
+    "disponivel": true
+  }
+]
