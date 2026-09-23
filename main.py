@@ -57,23 +57,26 @@ app.add_middleware(
 )
 
 
-def obter_caminho_tutorial() -> str:
-    """Localiza o arquivo tutorial.html considerando execução local, Render ou PyInstaller."""
+def obter_caminho_static(nome_arquivo: str) -> str:
+    """Localiza arquivos na pasta static considerando execução local, Render ou PyInstaller."""
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_dir, "static", "tutorial.html")
+    return os.path.join(base_dir, "static", nome_arquivo)
 
 
 @app.get(
     "/",
     tags=["Geral"],
     summary="Página inicial da API",
-    description="Retorna uma mensagem de boas-vindas e instrui onde acessar a documentação interativa e o tutorial."
+    description="Retorna uma mensagem de boas-vindas e instrui onde acessar a documentação interativa e os tutoriais."
 )
 def raiz():
     return {
         "mensagem": "🚀 Bem-vindo à API de Exemplo para Desenvolvimento Mobile!",
         "documentacao": "/docs",
-        "tutorial_flutter": "/tutorial",
+        "tutoriais": {
+            "atividade_1_produtos_api": "/tutorial",
+            "atividade_2_notificacoes_push": "/tutorial-notificacoes"
+        },
         "endpoints": {
             "listar_produtos": "GET /produtos",
             "buscar_produto": "GET /produtos/{id}",
@@ -88,18 +91,41 @@ def raiz():
 @app.get(
     "/tutorial",
     response_class=FileResponse,
-    tags=["Geral"],
-    summary="Tutorial Flutter interativo",
-    description="Apresenta um tutorial completo em HTML passo a passo para alunos criarem o app cliente Flutter."
+    tags=["Documentação & Tutoriais"],
+    summary="Atividade 1: Tutorial de Consumo de API (Catálogo de Produtos)",
+    description="Apresenta o tutorial completo em HTML para criar o app Flutter que consome a API de produtos."
 )
-def obter_tutorial():
-    caminho = obter_caminho_tutorial()
+def obter_tutorial_produtos():
+    caminho = obter_caminho_static("tutorial.html")
     if not os.path.exists(caminho):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Documento tutorial não encontrado no servidor."
+            detail="Documento tutorial de produtos não encontrado no servidor."
         )
     return FileResponse(caminho, media_type="text/html; charset=utf-8")
+
+
+@app.get(
+    "/tutorial-notificacoes",
+    response_class=FileResponse,
+    tags=["Documentação & Tutoriais"],
+    summary="Atividade 2: Tutorial de Notificações Push Simuladas (WebSockets)",
+    description="Apresenta o tutorial completo em HTML para implementar notificações push com WebSockets no Flutter."
+)
+@app.get(
+    "/tutorial/notificacoes",
+    response_class=FileResponse,
+    include_in_schema=False
+)
+def obter_tutorial_notificacoes():
+    caminho = obter_caminho_static("tutorial_notificacoes.html")
+    if not os.path.exists(caminho):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Documento tutorial de notificações não encontrado no servidor."
+        )
+    return FileResponse(caminho, media_type="text/html; charset=utf-8")
+
 
 
 
@@ -258,7 +284,8 @@ if __name__ == "__main__":
     print("=" * 70)
     print(f"  📖 Documentação Swagger UI:  http://localhost:{porta}/docs")
     print(f"  📖 Documentação ReDoc:       http://localhost:{porta}/redoc")
-    print(f"  📘 Tutorial Flutter (HTML):  http://localhost:{porta}/tutorial")
+    print(f"  📘 Atividade 1 (Produtos):   http://localhost:{porta}/tutorial")
+    print(f"  🔔 Atividade 2 (Push WSS):   http://localhost:{porta}/tutorial-notificacoes")
     print("-" * 70)
     print("  📲 Para Conectar seu App Mobile:")
     print(f"     • Emulador Android:        http://10.0.2.2:{porta}")

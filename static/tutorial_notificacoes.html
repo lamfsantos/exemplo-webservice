@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial Flutter: Notificações Push em Tempo Real (WebSockets)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #f59e0b;
+      --primary-dark: #d97706;
+      --primary-light: #fef3c7;
+      --accent: #8b5cf6;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #0b1120;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #f59e0b, #ef4444, #8b5cf6);
+      z-index: 1000;
+      width: 0%;
+      transition: width 0.1s ease;
+    }
+
+    .layout-wrapper {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar {
+      width: 320px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      padding: 2.5rem 1.5rem;
+      border-right: 1px solid var(--border);
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: #fbbf24;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-left: 0.5rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toc-link {
+      display: block;
+      padding: 0.6rem 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border-left: 2px solid transparent;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      color: #fbbf24;
+      background-color: rgba(245, 158, 11, 0.1);
+      border-left-color: #fbbf24;
+      padding-left: 1rem;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 3rem 4rem 6rem;
+      max-width: 980px;
+      min-width: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #f59e0b;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    h1 {
+      font-size: 2.65rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 40%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lead-text {
+      font-size: 1.15rem;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    .tutorial-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+      padding: 1.25rem;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .meta-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .app-preview-wrapper {
+      margin: 2.5rem 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-mockup {
+      width: 360px;
+      background: #000000;
+      border-radius: 36px;
+      padding: 12px;
+      border: 4px solid #334155;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .phone-screen {
+      background: #0f172a;
+      border-radius: 26px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 480px;
+      color: #f8fafc;
+      position: relative;
+    }
+
+    .mock-appbar {
+      background: #1e293b;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .mock-content {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    /* Push Banner Animado no Mockup */
+    .mock-push-banner {
+      position: absolute;
+      top: 60px;
+      left: 12px;
+      right: 12px;
+      background: #1e1b4b;
+      border: 1px solid #4338ca;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+      animation: slideDown 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes slideDown {
+      0% { transform: translateY(-10px); opacity: 0.8; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    .mock-push-icon {
+      font-size: 22px;
+    }
+
+    .mock-push-text {
+      text-align: left;
+    }
+
+    .mock-push-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fbbf24;
+    }
+
+    .mock-push-body {
+      font-size: 0.72rem;
+      color: #e2e8f0;
+      margin-top: 2px;
+    }
+
+    .tutorial-step {
+      margin-bottom: 4rem;
+      padding-top: 1rem;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-number {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 1.75rem 0 1rem;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p {
+      color: #cbd5e1;
+      margin-bottom: 1.25rem;
+    }
+
+    strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    ul, ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 0.6rem;
+    }
+
+    .callout {
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius);
+      margin: 1.75rem 0;
+      border-left: 4px solid;
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .callout-info {
+      border-left-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.1);
+    }
+
+    .callout-tip {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .callout-warning {
+      border-left-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .callout-info .callout-title { color: #38bdf8; }
+    .callout-tip .callout-title { color: #34d399; }
+    .callout-warning .callout-title { color: #fbbf24; }
+
+    .code-container {
+      margin: 1.5rem 0;
+      border-radius: var(--radius);
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      background: rgba(30, 41, 59, 0.6);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .code-filename {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.825rem;
+      color: #94a3b8;
+    }
+
+    .copy-btn {
+      background: rgba(51, 65, 85, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #f59e0b;
+      color: #ffffff;
+      border-color: #f59e0b;
+    }
+
+    .copy-btn.copied {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+
+    pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875em;
+    }
+
+    p code, li code {
+      background: rgba(51, 65, 85, 0.5);
+      color: #fbbf24;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .token-keyword { color: #f472b6; font-weight: 600; }
+    .token-class { color: #67e8f9; font-weight: 600; }
+    .token-string { color: #a7f3d0; }
+    .token-comment { color: #64748b; font-style: italic; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+
+    .feature-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-2px);
+      border-color: #fbbf24;
+    }
+
+    .feature-card-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+    }
+
+    .feature-card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .tutorial-footer {
+      margin-top: 5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .back-to-top {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 99;
+    }
+
+    .back-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .main-content { padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="progress-bar"></div>
+
+  <div class="layout-wrapper">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🔔</div>
+        <div>
+          <div class="brand-title">Push Simulator</div>
+          <div class="brand-subtitle">WebSocket Guide</div>
+        </div>
+      </div>
+
+      <div class="toc-title">Etapas da Atividade</div>
+      <ul class="toc-list">
+        <li><a href="#intro" class="toc-link">1. Visão Geral & Arquitetura</a></li>
+        <li><a href="#step1" class="toc-link">2. URLs do WebSocket (Render/Local)</a></li>
+        <li><a href="#step2" class="toc-link">3. Conectando no Flutter (dart:io)</a></li>
+        <li><a href="#step3" class="toc-link">4. Criando o Banner de Push</a></li>
+        <li><a href="#step4" class="toc-link">5. Ciclo de Vida (initState/dispose)</a></li>
+        <li><a href="#step5" class="toc-link">6. Código Completo de Exemplo</a></li>
+        <li><a href="#step6" class="toc-link">7. Testando com o Professor</a></li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+      <header id="intro">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          Atividade Prática &bull; WebSockets & Push
+        </div>
+        <h1>Simulando Notificações Push em Tempo Real no Flutter</h1>
+        <p class="lead-text">
+          Aprenda a implementar o recebimento de mensagens instantâneas e notificações push simuladas no seu aplicativo Flutter usando <strong>WebSockets nativos</strong> do Dart, sem depender de chaves do Firebase Console ou contas pagas da Apple.
+        </p>
+
+        <div class="tutorial-meta">
+          <div class="meta-item">
+            <span class="meta-label">Protocolo</span>
+            <span class="meta-val"><span style="color: #fbbf24;">WSS</span> (WebSocket Secure)</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Canal de Notificações</span>
+            <span class="meta-val">/ws/notificacoes</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Dependência Externa</span>
+            <span class="meta-val"><span style="color: #34d399;">Nenhuma</span> (Usa dart:io nativo)</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Disparo do Professor</span>
+            <span class="meta-val">POST /notificacoes/enviar</span>
+          </div>
+        </div>
+
+        <!-- Mockup Visual -->
+        <div class="app-preview-wrapper">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="mock-appbar">
+                <span>Meu Catálogo</span>
+                <span>📶 Conectado</span>
+              </div>
+              
+              <!-- Push Notification Simulado -->
+              <div class="mock-push-banner">
+                <div class="mock-push-icon">🔔</div>
+                <div class="mock-push-text">
+                  <div class="mock-push-title">Aviso do Professor</div>
+                  <div class="mock-push-body">Promoção relâmpago de 20% liberada no app!</div>
+                </div>
+              </div>
+
+              <div class="mock-content">
+                <p>O aplicativo fica aguardando mensagens enviadas pelo servidor...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- PASSO 1 -->
+      <section id="step1" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <h2>Entendendo a URL do WebSocket</h2>
+        </div>
+        <p>
+          Enquanto requisições tradicionais utilizam <code>http://</code> e <code>https://</code>, os WebSockets utilizam <code>ws://</code> e <code>wss://</code> (com criptografia SSL).
+        </p>
+
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon">☁️</div>
+            <div class="feature-card-title">Servidor na Nuvem (Render)</div>
+            <div class="feature-card-desc">
+              <code>wss://api-produtos-mobile.onrender.com/ws/notificacoes</code>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🤖</div>
+            <div class="feature-card-title">Emulador Android (Local)</div>
+            <div class="feature-card-desc">
+              <code>ws://10.0.2.2:8000/ws/notificacoes</code>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🍎</div>
+            <div class="feature-card-title">Simulador iOS / Web (Local)</div>
+            <div class="feature-card-desc">
+              <code>ws://localhost:8000/ws/notificacoes</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-title">ℹ️ Por que 'wss://' no Render?</div>
+          <p>O Render opera sob HTTPS seguro. Se você tentar conectar usando <code>ws://</code> (sem o <strong>s</strong>) na URL do Render, a conexão será recusada pelo navegador ou pelo sistema operacional do celular.</p>
+        </div>
+      </section>
+
+      <!-- PASSO 2 -->
+      <section id="step2" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <h2>Conectando no Flutter com dart:io Nativo</h2>
+        </div>
+        <p>
+          Você <strong>não precisa</strong> alterar seu <code>pubspec.yaml</code>. O pacote <code>dart:io</code> já oferece suporte integrado a WebSockets!
+        </p>
+        <p>
+          No arquivo onde sua tela está declarada (ex.: <code>lib/main.dart</code>), declare a variável do WebSocket e a função de conexão:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (Função de Conexão)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>import 'dart:io';   <span class="token-comment">// Contém a classe WebSocket</span>
+import 'dart:convert'; <span class="token-comment">// Para fazer o jsonDecode</span>
+
+<span class="token-keyword">class</span> <span class="token-class">_TelaListaProdutosState</span> <span class="token-keyword">extends</span> <span class="token-class">State</span>&lt;<span class="token-class">TelaListaProdutos</span>&gt; {
+  <span class="token-comment">// Variável para armazenar a conexão ativa</span>
+  <span class="token-class">WebSocket</span>? _canalWebSocket;
+
+  <span class="token-keyword">void</span> _conectarNotificacoes() <span class="token-keyword">async</span> {
+    <span class="token-keyword">try</span> {
+      <span class="token-comment">// URL do WebSocket no Render</span>
+      <span class="token-keyword">final</span> wsUrl = <span class="token-string">'wss://api-produtos-mobile.onrender.com/ws/notificacoes'</span>;
+      
+      _canalWebSocket = <span class="token-keyword">await</span> <span class="token-class">WebSocket</span>.connect(wsUrl);
+      print(<span class="token-string">'✅ Conectado com sucesso ao canal de notificações!'</span>);
+
+      <span class="token-comment">// Fica ouvindo os disparos enviados pelo servidor</span>
+      _canalWebSocket!.listen(
+        (dadoRecebido) {
+          <span class="token-comment">// O dado chega em formato String JSON: {"titulo": "...", "mensagem": "..."}</span>
+          <span class="token-keyword">final</span> <span class="token-class">Map</span>&lt;<span class="token-class">String</span>, <span class="token-class">dynamic</span>&gt; notificacao = jsonDecode(dadoRecebido);
+
+          <span class="token-keyword">final</span> <span class="token-class">String</span> titulo = notificacao[<span class="token-string">'titulo'</span>] ?? <span class="token-string">'Aviso'</span>;
+          <span class="token-keyword">final</span> <span class="token-class">String</span> mensagem = notificacao[<span class="token-string">'mensagem'</span>] ?? <span class="token-string">''</span>;
+
+          <span class="token-comment">// Exibe na interface do usuário</span>
+          _exibirAlertaPush(titulo, mensagem);
+        },
+        onError: (erro) {
+          print(<span class="token-string">'❌ Erro no canal WebSocket: $erro'</span>);
+        },
+        onDone: () {
+          print(<span class="token-string">'⚠️ Conexão WebSocket encerrada pelo servidor.'</span>);
+        },
+      );
+    } <span class="token-keyword">catch</span> (e) {
+      print(<span class="token-string">'Falha ao iniciar WebSocket: $e'</span>);
+    }
+  }
+  ...
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 3 -->
+      <section id="step3" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <h2>Criando o Banner Visual de Notificação (In-App Push)</h2>
+        </div>
+        <p>
+          Quando a notificação chega, usamos um <code>SnackBar</code> flutuante personalizado com ícone de sino e animação, simulando perfeitamente um push de sistema:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (_exibirAlertaPush)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="token-keyword">void</span> _exibirAlertaPush(<span class="token-class">String</span> titulo, <span class="token-class">String</span> mensagem) {
+  <span class="token-comment">// Verifica se a tela ainda está montada antes de desenhar na UI</span>
+  <span class="token-keyword">if</span> (!mounted) <span class="token-keyword">return</span>;
+
+  <span class="token-class">ScaffoldMessenger</span>.of(context).showSnackBar(
+    <span class="token-class">SnackBar</span>(
+      backgroundColor: <span class="token-class">Colors</span>.indigo.shade900,
+      behavior: <span class="token-class">SnackBarBehavior</span>.floating,
+      shape: <span class="token-class">RoundedRectangleBorder</span>(
+        borderRadius: <span class="token-class">BorderRadius</span>.circular(<span class="token-number">12</span>),
+      ),
+      margin: <span class="token-keyword">const</span> <span class="token-class">EdgeInsets</span>.all(<span class="token-number">16</span>),
+      duration: <span class="token-keyword">const</span> <span class="token-class">Duration</span>(seconds: <span class="token-number">5</span>),
+      content: <span class="token-class">Row</span>(
+        crossAxisAlignment: <span class="token-class">CrossAxisAlignment</span>.start,
+        children: [
+          <span class="token-keyword">const</span> <span class="token-class">Icon</span>(
+            <span class="token-class">Icons</span>.notifications_active, 
+            color: <span class="token-class">Colors</span>.amber, 
+            size: <span class="token-number">28</span>
+          ),
+          <span class="token-keyword">const</span> <span class="token-class">SizedBox</span>(width: <span class="token-number">12</span>),
+          <span class="token-class">Expanded</span>(
+            child: <span class="token-class">Column</span>(
+              mainAxisSize: <span class="token-class">MainAxisSize</span>.min,
+              crossAxisAlignment: <span class="token-class">CrossAxisAlignment</span>.start,
+              children: [
+                <span class="token-class">Text</span>(
+                  titulo,
+                  style: <span class="token-keyword">const</span> <span class="token-class">TextStyle</span>(
+                    fontWeight: <span class="token-class">FontWeight</span>.bold,
+                    fontSize: <span class="token-number">14</span>,
+                    color: <span class="token-class">Colors</span>.white,
+                  ),
+                ),
+                <span class="token-keyword">const</span> <span class="token-class">SizedBox</span>(height: <span class="token-number">2</span>),
+                <span class="token-class">Text</span>(
+                  mensagem,
+                  style: <span class="token-keyword">const</span> <span class="token-class">TextStyle</span>(
+                    fontSize: <span class="token-number">13</span>, 
+                    color: <span class="token-class">Colors</span>.white70
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 4 -->
+      <section id="step4" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <h2>Gerenciando o Ciclo de Vida (initState e dispose)</h2>
+        </div>
+        <p>
+          Para que o canal abra assim que o app inicia e seja fechado de forma limpa quando o usuário sair da tela, utilize o <code>initState</code> e o <code>dispose</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (Ciclo de Vida)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>@override
+<span class="token-keyword">void</span> initState() {
+  <span class="token-keyword">super</span>.initState();
+  _buscarProdutos();        <span class="token-comment">// Busca os dados HTTP GET normais</span>
+  _conectarNotificacoes();  <span class="token-comment">// Inicia a conexão WebSocket em segundo plano</span>
+}
+
+@override
+<span class="token-keyword">void</span> dispose() {
+  <span class="token-comment">// Fecha a conexão WebSocket para não desperdiçar memória no aparelho</span>
+  _canalWebSocket?.close();
+  <span class="token-keyword">super</span>.dispose();
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 5 -->
+      <section id="step5" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <h2>Código de Exemplo Completo Integrado</h2>
+        </div>
+        <p>
+          Abaixo você pode ver o código com tudo integrado &mdash; requisição GET dos produtos e escuta do WebSocket rodando juntos em harmonia:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (Trecho Completo)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar Código</button>
+          </div>
+          <pre><code>import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+// ... [Classe Produto permanece igual] ...
+
+class _TelaListaProdutosState extends State&lt;TelaListaProdutos&gt; {
+  final String _apiUrl = 'https://api-produtos-mobile.onrender.com/produtos';
+  final String _wsUrl = 'wss://api-produtos-mobile.onrender.com/ws/notificacoes';
+
+  List&lt;Produto&gt; _produtos = [];
+  bool _carregando = true;
+  String? _mensagemErro;
+  WebSocket? _canalWebSocket;
+
+  @override
+  void initState() {
+    super.initState();
+    _buscarProdutos();
+    _conectarNotificacoes();
+  }
+
+  @override
+  void dispose() {
+    _canalWebSocket?.close();
+    super.dispose();
+  }
+
+  void _conectarNotificacoes() async {
+    try {
+      _canalWebSocket = await WebSocket.connect(_wsUrl);
+      _canalWebSocket!.listen((dado) {
+        final Map&lt;String, dynamic&gt; push = jsonDecode(dado);
+        _exibirAlertaPush(push['titulo'] ?? 'Novo Aviso', push['mensagem'] ?? '');
+      });
+    } catch (e) {
+      print('Erro ao conectar no WebSocket: $e');
+    }
+  }
+
+  void _exibirAlertaPush(String titulo, String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.indigo.shade900,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 5),
+        content: Row(
+          children: [
+            const Icon(Icons.notifications_active, color: Colors.amber, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  Text(mensagem, style: const TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ... [Demais métodos _buscarProdutos e build permanecem iguais] ...
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 6 -->
+      <section id="step6" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">6</div>
+          <h2>Como Testar em Tempo Real</h2>
+        </div>
+        <p>Com o aplicativo rodando no seu dispositivo ou emulador:</p>
+
+        <ol>
+          <li>Abra o navegador no Swagger UI da API: <a href="https://api-produtos-mobile.onrender.com/docs" target="_blank" style="color: #fbbf24; text-decoration: none;"><strong>/docs</strong> ↗</a></li>
+          <li>Localize o endpoint <code>POST /notificacoes/enviar</code> e clique em <strong>Try it out</strong>.</li>
+          <li>Preencha um título e uma mensagem de teste no corpo da requisição (JSON):
+            <div class="code-container" style="margin-top: 8px;">
+              <pre><code>{
+  "titulo": "🔥 Super Desconto",
+  "mensagem": "Todos os produtos com frete grátis nos próximos 15 minutos!"
+}</code></pre>
+            </div>
+          </li>
+          <li>Clique no botão azul <strong>Execute</strong>.</li>
+          <li>Olhe para a tela do seu celular: a notificação surgirá instantaneamente!</li>
+        </ol>
+      </section>
+
+      <footer class="tutorial-footer">
+        <p>Atividade Prática de WebSockets &bull; <strong>Desenvolvimento Mobile</strong></p>
+      </footer>
+    </main>
+  </div>
+
+  <button class="back-to-top" id="backToTop" title="Voltar ao topo">↑</button>
+
+  <script>
+    window.addEventListener('scroll', () => {
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('progress-bar').style.width = scrolled + '%';
+
+      const backBtn = document.getElementById('backToTop');
+      if (winScroll > 400) {
+        backBtn.classList.add('visible');
+      } else {
+        backBtn.classList.remove('visible');
+      }
+    });
+
+    document.getElementById('backToTop').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function copyCode(button) {
+      const codeElement = button.closest('.code-container').querySelector('pre code');
+      navigator.clipboard.writeText(codeElement.innerText).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copiado!';
+        button.classList.add('copied');
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    const sections = document.querySelectorAll('.tutorial-step, header');
+    const navLinks = document.querySelectorAll('.toc-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
