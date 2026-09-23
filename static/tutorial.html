@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial Flutter: Do Zero ao Consumo de API REST</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #0b1120;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    /* Barra de progresso de leitura */
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #0284c7, #0d9488, #38bdf8);
+      z-index: 1000;
+      width: 0%;
+      transition: width 0.1s ease;
+    }
+
+    /* Layout principal com Sidebar e Conteúdo */
+    .layout-wrapper {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Sidebar / Sumário */
+    .sidebar {
+      width: 320px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      padding: 2.5rem 1.5rem;
+      border-right: 1px solid var(--border);
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--teal);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-left: 0.5rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toc-link {
+      display: block;
+      padding: 0.6rem 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border-left: 2px solid transparent;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      color: #38bdf8;
+      background-color: rgba(56, 189, 248, 0.1);
+      border-left-color: #38bdf8;
+      padding-left: 1rem;
+    }
+
+    /* Conteúdo Principal */
+    .main-content {
+      flex: 1;
+      padding: 3rem 4rem 6rem;
+      max-width: 980px;
+      min-width: 0;
+    }
+
+    /* Hero Header */
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(13, 148, 136, 0.15);
+      border: 1px solid rgba(13, 148, 136, 0.35);
+      color: #2dd4bf;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #2dd4bf;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lead-text {
+      font-size: 1.15rem;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    /* Informações do Tutorial / Meta Info */
+    .tutorial-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+      padding: 1.25rem;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .meta-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    /* Seções e Títulos */
+    .tutorial-step {
+      margin-bottom: 4rem;
+      padding-top: 1rem;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-number {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--teal));
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 1.75rem 0 1rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p {
+      color: #cbd5e1;
+      margin-bottom: 1.25rem;
+    }
+
+    strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    ul, ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 0.6rem;
+    }
+
+    /* Callouts / Avisos */
+    .callout {
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius);
+      margin: 1.75rem 0;
+      border-left: 4px solid;
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .callout-info {
+      border-left-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.1);
+    }
+
+    .callout-tip {
+      border-left-color: var(--teal);
+      background: rgba(13, 148, 136, 0.1);
+    }
+
+    .callout-warning {
+      border-left-color: var(--accent-yellow);
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .callout-info .callout-title { color: #38bdf8; }
+    .callout-tip .callout-title { color: #2dd4bf; }
+    .callout-warning .callout-title { color: #fbbf24; }
+
+    .callout p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Blocos de Código */
+    .code-container {
+      margin: 1.5rem 0;
+      border-radius: var(--radius);
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      background: rgba(30, 41, 59, 0.6);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .code-filename {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.825rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .code-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #475569;
+    }
+
+    .copy-btn {
+      background: rgba(51, 65, 85, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    .copy-btn.copied {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+
+    pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875em;
+    }
+
+    p code, li code {
+      background: rgba(51, 65, 85, 0.5);
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    /* Cores de Sintaxe simples para Dart / YAML */
+    .token-keyword { color: #f472b6; font-weight: 600; }
+    .token-class { color: #67e8f9; font-weight: 600; }
+    .token-string { color: #a7f3d0; }
+    .token-number { color: #fcd34d; }
+    .token-comment { color: #64748b; font-style: italic; }
+    .token-prop { color: #cbd5e1; }
+    .token-func { color: #93c5fd; }
+
+    /* Visualização do Mock do Aplicativo */
+    .app-preview-wrapper {
+      margin: 2.5rem 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-mockup {
+      width: 360px;
+      background: #000000;
+      border-radius: 36px;
+      padding: 12px;
+      border: 4px solid #334155;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .phone-screen {
+      background: #f8fafc;
+      border-radius: 26px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+      color: #1e293b;
+    }
+
+    .mock-appbar {
+      background: #0d9488;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .mock-content {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f1f5f9;
+    }
+
+    .mock-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .mock-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #ccfbf1;
+      color: #0f766e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .mock-info {
+      flex: 1;
+    }
+
+    .mock-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .mock-desc {
+      font-size: 0.72rem;
+      color: #64748b;
+      margin: 2px 0 6px;
+      line-height: 1.3;
+    }
+
+    .mock-price {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #0d9488;
+    }
+
+    .mock-badge {
+      align-self: flex-start;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 100px;
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .mock-badge.unavailable {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    /* Grids informativos */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+
+    .feature-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+    }
+
+    .feature-card-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+    }
+
+    .feature-card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    /* Rodapé */
+    .tutorial-footer {
+      margin-top: 5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* Botão flutuante para voltar ao topo */
+    .back-to-top {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 99;
+    }
+
+    .back-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Responsividade */
+    @media (max-width: 1024px) {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        padding: 2rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="progress-bar"></div>
+
+  <div class="layout-wrapper">
+    <!-- Sidebar com Sumário e Navegação -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">F</div>
+        <div>
+          <div class="brand-title">Flutter API Guide</div>
+          <div class="brand-subtitle">Passo a Passo</div>
+        </div>
+      </div>
+
+      <div class="toc-title">Etapas do Tutorial</div>
+      <ul class="toc-list">
+        <li><a href="#intro" class="toc-link">1. Visão Geral & API</a></li>
+        <li><a href="#step1" class="toc-link">2. Criando o Projeto (VS Code)</a></li>
+        <li><a href="#step2" class="toc-link">3. Instalando o pacote http</a></li>
+        <li><a href="#step3" class="toc-link">4. Permissões de Internet</a></li>
+        <li><a href="#step4" class="toc-link">5. Criando o Model (Produto)</a></li>
+        <li><a href="#step5" class="toc-link">6. Estado & StatefulWidget</a></li>
+        <li><a href="#step6" class="toc-link">7. Consumindo o GET da API</a></li>
+        <li><a href="#step7" class="toc-link">8. Construindo a Interface (UI)</a></li>
+        <li><a href="#step8" class="toc-link">9. Código Completo main.dart</a></li>
+        <li><a href="#step9" class="toc-link">10. Executando e Testando</a></li>
+      </ul>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+      <header id="intro">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          Guia Prático &bull; Flutter 3.x
+        </div>
+        <h1>Criando um Catálogo Mobile com Consumo de API REST em Flutter</h1>
+        <p class="lead-text">
+          Aprenda passo a passo como inicializar um novo projeto Flutter no VS Code, configurar o pacote <code>http</code>, mapear o modelo de dados e exibir produtos consumidos de uma API REST com suporte a estados de <strong>carregamento</strong>, <strong>tratamento de erros</strong> e <strong>atualização manual (pull-to-refresh)</strong>.
+        </p>
+
+        <!-- Metadados da API e Projeto -->
+        <div class="tutorial-meta">
+          <div class="meta-item">
+            <span class="meta-label">URL da API</span>
+            <span class="meta-val"><a href="https://api-produtos-mobile.onrender.com/produtos" target="_blank" style="color: #38bdf8; text-decoration: none;">onrender.com/produtos ↗</a></span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Método HTTP</span>
+            <span class="meta-val"><span style="color: #22c55e;">GET</span> /produtos</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Pacote HTTP</span>
+            <span class="meta-val">http: ^1.2.0</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Design System</span>
+            <span class="meta-val">Material 3 (Teal)</span>
+          </div>
+        </div>
+
+        <!-- Preview do App Final -->
+        <div class="app-preview-wrapper">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="mock-appbar">
+                <span>Produtos (API Externa)</span>
+                <span>↻</span>
+              </div>
+              <div class="mock-content">
+                <!-- Card 1 -->
+                <div class="mock-card">
+                  <div class="mock-avatar">#1</div>
+                  <div class="mock-info">
+                    <div class="mock-title">Smartphone Galaxy A15</div>
+                    <div class="mock-desc">Tela 6.5 Super AMOLED, 128GB, 4GB RAM</div>
+                    <div class="mock-price">R$ 1199,00</div>
+                  </div>
+                  <div class="mock-badge">Disponível</div>
+                </div>
+                <!-- Card 2 -->
+                <div class="mock-card">
+                  <div class="mock-avatar">#2</div>
+                  <div class="mock-info">
+                    <div class="mock-title">Fone de Ouvido Bluetooth JBL</div>
+                    <div class="mock-desc">Cancelamento de ruído passivo, até 30h bateria</div>
+                    <div class="mock-price">R$ 249,90</div>
+                  </div>
+                  <div class="mock-badge">Disponível</div>
+                </div>
+                <!-- Card 3 -->
+                <div class="mock-card">
+                  <div class="mock-avatar" style="background:#e2e8f0; color:#64748b;">#3</div>
+                  <div class="mock-info">
+                    <div class="mock-title">Smartwatch Fit Pulse</div>
+                    <div class="mock-desc">Monitor cardíaco, oxímetro e GPS integrado</div>
+                    <div class="mock-price">R$ 389,00</div>
+                  </div>
+                  <div class="mock-badge unavailable">Esgotado</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- PASSO 1 -->
+      <section id="step1" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <h2>Criando o Novo Projeto no VS Code</h2>
+        </div>
+        <p>
+          O Visual Studio Code oferece comandos integrados que geram toda a estrutura inicial do aplicativo Flutter sem precisar abrir o terminal manualmente.
+        </p>
+
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon">⌨️</div>
+            <div class="feature-card-title">1. Abra a Paleta de Comandos</div>
+            <div class="feature-card-desc">Pressione <code>Ctrl + Shift + P</code> (no Windows/Linux) ou <code>Cmd + Shift + P</code> (no macOS).</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🚀</div>
+            <div class="feature-card-title">2. Comando Novo Projeto</div>
+            <div class="feature-card-desc">Digite <strong>Flutter: New Project</strong> (ou <em>Create New Project</em>) e tecle <strong>Enter</strong>.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">📱</div>
+            <div class="feature-card-title">3. Selecione Application</div>
+            <div class="feature-card-desc">Escolha o modelo <strong>Application</strong> para criar um aplicativo padrão.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">📁</div>
+            <div class="feature-card-title">4. Escolha a Pasta e Nome</div>
+            <div class="feature-card-desc">Indique a pasta de destino e digite o nome do projeto (ex.: <code>client</code>). Pressione Enter.</div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-title">ℹ️ Estrutura Gerada</div>
+          <p>Após alguns segundos, o VS Code abrirá a pasta com arquivos como <code>pubspec.yaml</code> (gerenciador de dependências) e a pasta <code>lib/</code> com o arquivo principal <code>main.dart</code>.</p>
+        </div>
+      </section>
+
+      <!-- PASSO 2 -->
+      <section id="step2" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <h2>Adicionando o Pacote HTTP</h2>
+        </div>
+        <p>
+          O Flutter/Dart por padrão não inclui um cliente HTTP com alto nível de abstração. Para fazer requisições <code>GET</code>, <code>POST</code>, etc., usamos o pacote oficial <strong>http</strong> da comunidade Dart.
+        </p>
+
+        <h3>Opção A: Pelo Terminal Integrado (Mais Rápido)</h3>
+        <p>No VS Code, abra o terminal integrado (<code>Ctrl + `</code> ou menu <em>Terminal > New Terminal</em>) e execute:</p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Terminal</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>flutter pub add http</code></pre>
+        </div>
+
+        <h3>Opção B: Manualmente no pubspec.yaml</h3>
+        <p>Abra o arquivo <code>pubspec.yaml</code> na raiz do projeto e declare o pacote sob a chave <code>dependencies:</code>:</p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">pubspec.yaml</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="token-prop">dependencies:</span>
+  <span class="token-prop">flutter:</span>
+    <span class="token-prop">sdk:</span> flutter
+
+  <span class="token-comment"># Pacote oficial para requisições HTTP (GET, POST, etc.)</span>
+  <span class="token-prop">http:</span> ^1.2.0
+
+  <span class="token-prop">cupertino_icons:</span> ^1.0.8</code></pre>
+        </div>
+
+        <p>Ao salvar o arquivo, o VS Code executará automaticamente o comando <code>flutter pub get</code> para baixar a biblioteca.</p>
+      </section>
+
+      <!-- PASSO 3 -->
+      <section id="step3" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <h2>Permissão de Acesso à Internet no Android</h2>
+        </div>
+        <p>
+          Para que o aplicativo possa se conectar a servidores externos quando compilado para Android, é uma boa prática garantir a permissão de <strong>INTERNET</strong> no arquivo de manifesto.
+        </p>
+        <p>
+          Abra o arquivo <code>android/app/src/main/AndroidManifest.xml</code> e adicione a seguinte linha antes da tag <code>&lt;application&gt;</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">android/app/src/main/AndroidManifest.xml</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    <span class="token-comment">&lt;!-- Permissão necessária para fazer chamadas HTTP na rede --&gt;</span>
+    <span class="token-keyword">&lt;uses-permission android:name="android.permission.INTERNET"/&gt;</span>
+
+    &lt;application
+        android:label="client"
+        ...&gt;
+        ...
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-title">💡 Dica sobre modo Debug</div>
+          <p>No modo Debug, o Flutter habilita a permissão temporária automaticamente para fins de desenvolvimento, mas para compilar APK ou evitar falhas de rede em emuladores, declarar a permissão no manifesto é fundamental.</p>
+        </div>
+      </section>
+
+      <!-- PASSO 4 -->
+      <section id="step4" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <h2>Criando o Modelo de Dados (Model / DTO)</h2>
+        </div>
+        <p>
+          A API em <code>https://api-produtos-mobile.onrender.com/produtos</code> devolve uma lista de objetos JSON com esta estrutura:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Exemplo de JSON da API</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>[
+  {
+    <span class="token-prop">"id"</span>: <span class="token-number">1</span>,
+    <span class="token-prop">"nome"</span>: <span class="token-string">"Smartphone Galaxy A15"</span>,
+    <span class="token-prop">"preco"</span>: <span class="token-number">1199.0</span>,
+    <span class="token-prop">"descricao"</span>: <span class="token-string">"Tela 6.5 Super AMOLED, 128GB, 4GB RAM, Bateria 5000mAh"</span>,
+    <span class="token-prop">"disponivel"</span>: <span class="token-keyword">true</span>
+  }
+]</code></pre>
+        </div>
+
+        <p>
+          Para trabalhar de forma segura (Type Safety) e com autocompletar, criamos a classe <code>Produto</code> com um <strong>Factory Constructor</strong> <code>Produto.fromJson</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (Seção do Model)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="token-keyword">class</span> <span class="token-class">Produto</span> {
+  <span class="token-keyword">final</span> <span class="token-class">int</span> id;
+  <span class="token-keyword">final</span> <span class="token-class">String</span> nome;
+  <span class="token-keyword">final</span> <span class="token-class">double</span> preco;
+  <span class="token-keyword">final</span> <span class="token-class">String</span>? descricao; <span class="token-comment">// Opcional (pode ser nulo)</span>
+  <span class="token-keyword">final</span> <span class="token-class">bool</span> disponivel;
+
+  <span class="token-class">Produto</span>({
+    <span class="token-keyword">required</span> <span class="token-keyword">this</span>.id,
+    <span class="token-keyword">required</span> <span class="token-keyword">this</span>.nome,
+    <span class="token-keyword">required</span> <span class="token-keyword">this</span>.preco,
+    <span class="token-keyword">this</span>.descricao,
+    <span class="token-keyword">required</span> <span class="token-keyword">this</span>.disponivel,
+  });
+
+  <span class="token-comment">/// Construtor de fábrica para transformar o Map do JSON em Objeto Dart</span>
+  <span class="token-keyword">factory</span> <span class="token-class">Produto</span>.fromJson(<span class="token-class">Map</span>&lt;<span class="token-class">String</span>, <span class="token-class">dynamic</span>&gt; json) {
+    <span class="token-keyword">return</span> <span class="token-class">Produto</span>(
+      id: json[<span class="token-string">'id'</span>] <span class="token-keyword">as</span> <span class="token-class">int</span>,
+      nome: json[<span class="token-string">'nome'</span>] <span class="token-keyword">as</span> <span class="token-class">String</span>,
+      <span class="token-comment">// Usamos toDouble() porque o número no JSON pode vir como int (ex: 1200) ou double (1199.90)</span>
+      preco: (json[<span class="token-string">'preco'</span>] <span class="token-keyword">as</span> <span class="token-class">num</span>).toDouble(),
+      descricao: json[<span class="token-string">'descricao'</span>] <span class="token-keyword">as</span> <span class="token-class">String</span>?,
+      disponivel: json[<span class="token-string">'disponivel'</span>] <span class="token-keyword">as</span> <span class="token-class">bool</span>? ?? <span class="token-keyword">false</span>,
+    );
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 5 -->
+      <section id="step5" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <h2>Gerenciamento de Estado com StatefulWidget</h2>
+        </div>
+        <p>
+          A tela precisa reagir e redesenhar conforme a requisição acontece. Usamos um <code>StatefulWidget</code> com três variáveis de controle:
+        </p>
+
+        <ul>
+          <li><code>List&lt;Produto&gt; _produtos = [];</code> &mdash; Armazena os itens recebidos com sucesso.</li>
+          <li><code>bool _carregando = true;</code> &mdash; Indica se a requisição está em andamento para exibir o spinner.</li>
+          <li><code>String? _mensagemErro;</code> &mdash; Se houver falha de rede ou timeout, armazena a mensagem para alertar o usuário.</li>
+        </ul>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (Ciclo de Vida)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="token-keyword">class</span> <span class="token-class">TelaListaProdutos</span> <span class="token-keyword">extends</span> <span class="token-class">StatefulWidget</span> {
+  <span class="token-keyword">const</span> <span class="token-class">TelaListaProdutos</span>({<span class="token-keyword">super</span>.key});
+
+  @override
+  <span class="token-class">State</span>&lt;<span class="token-class">TelaListaProdutos</span>&gt; createState() =&gt; <span class="token-class">_TelaListaProdutosState</span>();
+}
+
+<span class="token-keyword">class</span> <span class="token-class">_TelaListaProdutosState</span> <span class="token-keyword">extends</span> <span class="token-class">State</span>&lt;<span class="token-class">TelaListaProdutos</span>&gt; {
+  <span class="token-keyword">final</span> <span class="token-class">String</span> _apiUrl = <span class="token-string">'https://api-produtos-mobile.onrender.com/produtos'</span>;
+
+  <span class="token-class">List</span>&lt;<span class="token-class">Produto</span>&gt; _produtos = [];
+  <span class="token-class">bool</span> _carregando = <span class="token-keyword">true</span>;
+  <span class="token-class">String</span>? _mensagemErro;
+
+  <span class="token-comment">// initState roda uma única vez quando a tela é carregada pela primeira vez</span>
+  @override
+  <span class="token-keyword">void</span> initState() {
+    <span class="token-keyword">super</span>.initState();
+    _buscarProdutos(); <span class="token-comment">// Dispara a busca inicial na API</span>
+  }
+  ...
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 6 -->
+      <section id="step6" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">6</div>
+          <h2>Consumindo a API (Método GET e Tratamento de Erros)</h2>
+        </div>
+        <p>
+          Aqui implementamos o método assíncrono <code>_buscarProdutos()</code>. Ele faz a chamada HTTP, aguarda a resposta (<code>await</code>), trata acentuação UTF-8 e converte os dados.
+        </p>
+
+        <div class="callout callout-warning">
+          <div class="callout-title">⚠️ Atenção: Servidor no Render (Cold Start)</div>
+          <p>
+            Como o backend gratuito no Render entra em modo "hibernação" quando fica ocioso, a primeira requisição pode levar cerca de 30 a 50 segundos para "acordar". Por isso, definimos um <code>.timeout(const Duration(seconds: 45))</code> para não abortar antes da hora.
+          </p>
+        </div>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (_buscarProdutos)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="token-class">Future</span>&lt;<span class="token-keyword">void</span>&gt; _buscarProdutos() <span class="token-keyword">async</span> {
+  setState(() {
+    _carregando = <span class="token-keyword">true</span>;
+    _mensagemErro = <span class="token-keyword">null</span>;
+  });
+
+  <span class="token-keyword">try</span> {
+    <span class="token-keyword">final</span> uri = <span class="token-class">Uri</span>.parse(_apiUrl);
+    
+    <span class="token-comment">// Faz a requisição HTTP GET com timeout de 45 segundos</span>
+    <span class="token-keyword">final</span> resposta = <span class="token-keyword">await</span> http.get(uri).timeout(
+      <span class="token-keyword">const</span> <span class="token-class">Duration</span>(seconds: <span class="token-number">45</span>),
+    );
+
+    <span class="token-keyword">if</span> (resposta.statusCode == <span class="token-number">200</span>) {
+      <span class="token-comment">// Usamos utf8.decode para garantir que caracteres especiais (ã, é, ç) não fiquem corrompidos</span>
+      <span class="token-keyword">final</span> <span class="token-class">List</span>&lt;<span class="token-class">dynamic</span>&gt; dadosJson = jsonDecode(utf8.decode(resposta.bodyBytes));
+
+      <span class="token-comment">// Transforma a lista de maps em lista de objetos Produto</span>
+      <span class="token-keyword">final</span> <span class="token-class">List</span>&lt;<span class="token-class">Produto</span>&gt; listaCarregada = dadosJson
+          .map((item) =&gt; <span class="token-class">Produto</span>.fromJson(item <span class="token-keyword">as</span> <span class="token-class">Map</span>&lt;<span class="token-class">String</span>, <span class="token-class">dynamic</span>&gt;))
+          .toList();
+
+      setState(() {
+        _produtos = listaCarregada;
+        _carregando = <span class="token-keyword">false</span>;
+      });
+    } <span class="token-keyword">else</span> {
+      setState(() {
+        _mensagemErro = <span class="token-string">'Erro no servidor: Código HTTP ${resposta.statusCode}'</span>;
+        _carregando = <span class="token-keyword">false</span>;
+      });
+    }
+  } <span class="token-keyword">on</span> <span class="token-class">SocketException</span> {
+    setState(() {
+      _mensagemErro = <span class="token-string">'Falha de conexão. Verifique sua internet ou a URL da API.'</span>;
+      _carregando = <span class="token-keyword">false</span>;
+    });
+  } <span class="token-keyword">on</span> http.<span class="token-class">ClientException</span> {
+    setState(() {
+      _mensagemErro = <span class="token-string">'Não foi possível conectar ao servidor da API.'</span>;
+      _carregando = <span class="token-keyword">false</span>;
+    });
+  } <span class="token-keyword">catch</span> (e) {
+    setState(() {
+      _mensagemErro = <span class="token-string">'Ocorreu um erro inesperado: $e'</span>;
+      _carregando = <span class="token-keyword">false</span>;
+    });
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 7 -->
+      <section id="step7" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">7</div>
+          <h2>Construindo a Interface (UI) Moderna</h2>
+        </div>
+        <p>
+          O método <code>_construirCorpo()</code> divide a tela em 4 estados possíveis, garantindo que o usuário nunca veja uma tela em branco ou confusa:
+        </p>
+
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon">⏳</div>
+            <div class="feature-card-title">1. Estado Carregando</div>
+            <div class="feature-card-desc">Exibe <code>CircularProgressIndicator</code> e mensagem avisando que a API pode demorar a acordar.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">❌</div>
+            <div class="feature-card-title">2. Estado de Erro</div>
+            <div class="feature-card-desc">Mostra o ícone de alerta, a mensagem exata do erro e um botão <em>Tentar Novamente</em>.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">📭</div>
+            <div class="feature-card-title">3. Estado Vazio</div>
+            <div class="feature-card-desc">Se a lista retornar 0 itens, exibe uma mensagem amigável de catálogo vazio.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">✨</div>
+            <div class="feature-card-title">4. Estado Sucesso</div>
+            <div class="feature-card-desc">Exibe a lista com <code>RefreshIndicator</code> (puxar para baixo para atualizar) e <code>ListView.builder</code> com Cards.</div>
+          </div>
+        </div>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (ListView.builder com Cards)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="token-class">RefreshIndicator</span>(
+  onRefresh: _buscarProdutos,
+  child: <span class="token-class">ListView</span>.builder(
+    padding: <span class="token-keyword">const</span> <span class="token-class">EdgeInsets</span>.symmetric(horizontal: <span class="token-number">12</span>, vertical: <span class="token-number">8</span>),
+    itemCount: _produtos.length,
+    itemBuilder: (context, index) {
+      <span class="token-keyword">final</span> produto = _produtos[index];
+
+      <span class="token-keyword">return</span> <span class="token-class">Card</span>(
+        elevation: <span class="token-number">2</span>,
+        margin: <span class="token-keyword">const</span> <span class="token-class">EdgeInsets</span>.symmetric(vertical: <span class="token-number">6</span>),
+        shape: <span class="token-class">RoundedRectangleBorder</span>(
+          borderRadius: <span class="token-class">BorderRadius</span>.circular(<span class="token-number">12</span>),
+        ),
+        child: <span class="token-class">Padding</span>(
+          padding: <span class="token-keyword">const</span> <span class="token-class">EdgeInsets</span>.all(<span class="token-number">12.0</span>),
+          child: <span class="token-class">Row</span>(
+            crossAxisAlignment: <span class="token-class">CrossAxisAlignment</span>.start,
+            children: [
+              <span class="token-comment">// Círculo com o ID</span>
+              <span class="token-class">CircleAvatar</span>(
+                backgroundColor: produto.disponivel
+                    ? <span class="token-class">Colors</span>.teal.shade50
+                    : <span class="token-class">Colors</span>.grey.shade200,
+                foregroundColor: produto.disponivel
+                    ? <span class="token-class">Colors</span>.teal
+                    : <span class="token-class">Colors</span>.grey.shade600,
+                child: <span class="token-class">Text</span>(<span class="token-string">'#${produto.id}'</span>),
+              ),
+              <span class="token-keyword">const</span> <span class="token-class">SizedBox</span>(width: <span class="token-number">14</span>),
+
+              <span class="token-comment">// Nome, Descrição e Preço</span>
+              <span class="token-class">Expanded</span>(
+                child: <span class="token-class">Column</span>(
+                  crossAxisAlignment: <span class="token-class">CrossAxisAlignment</span>.start,
+                  children: [
+                    <span class="token-class">Text</span>(
+                      produto.nome,
+                      style: <span class="token-keyword">const</span> <span class="token-class">TextStyle</span>(
+                        fontSize: <span class="token-number">16</span>,
+                        fontWeight: <span class="token-class">FontWeight</span>.bold,
+                      ),
+                    ),
+                    <span class="token-keyword">if</span> (produto.descricao != <span class="token-keyword">null</span> &amp;&amp; produto.descricao!.isNotEmpty) ...[
+                      <span class="token-keyword">const</span> <span class="token-class">SizedBox</span>(height: <span class="token-number">4</span>),
+                      <span class="token-class">Text</span>(
+                        produto.descricao!,
+                        style: <span class="token-class">TextStyle</span>(fontSize: <span class="token-number">13</span>, color: <span class="token-class">Colors</span>.grey.shade700),
+                      ),
+                    ],
+                    <span class="token-keyword">const</span> <span class="token-class">SizedBox</span>(height: <span class="token-number">8</span>),
+                    <span class="token-class">Text</span>(
+                      <span class="token-string">'R\$ ${produto.preco.toStringAsFixed(2)}'</span>,
+                      style: <span class="token-keyword">const</span> <span class="token-class">TextStyle</span>(
+                        fontSize: <span class="token-number">15</span>,
+                        fontWeight: <span class="token-class">FontWeight</span>.w600,
+                        color: <span class="token-class">Colors</span>.teal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              <span class="token-comment">// Chip de Disponibilidade</span>
+              <span class="token-class">Chip</span>(
+                label: <span class="token-class">Text</span>(
+                  produto.disponivel ? <span class="token-string">'Disponível'</span> : <span class="token-string">'Esgotado'</span>,
+                  style: <span class="token-class">TextStyle</span>(
+                    fontSize: <span class="token-number">11</span>,
+                    color: produto.disponivel ? <span class="token-class">Colors</span>.green.shade800 : <span class="token-class">Colors</span>.red.shade800,
+                    fontWeight: <span class="token-class">FontWeight</span>.w600,
+                  ),
+                ),
+                backgroundColor: produto.disponivel ? <span class="token-class">Colors</span>.green.shade50 : <span class="token-class">Colors</span>.red.shade50,
+                side: <span class="token-class">BorderSide</span>.none,
+                padding: <span class="token-class">EdgeInsets</span>.zero,
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  ),
+);</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 8: CÓDIGO COMPLETO -->
+      <section id="step8" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">8</div>
+          <h2>Código Completo do main.dart</h2>
+        </div>
+        <p>
+          Substitua todo o conteúdo existente no arquivo <code>lib/main.dart</code> pelo código pronto abaixo. Ele já contém todos os imports, a classe <code>Produto</code>, as chamadas com timeout, a decodificação UTF-8 e a interface responsiva.
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar Código Completo</button>
+          </div>
+          <pre><code>import 'dart:convert'; // Necessário para converter JSON em estruturas do Dart (Map e List)
+import 'dart:io'; // Para capturar exceções de rede específicas (SocketException)
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Pacote responsável por fazer requisições HTTP (GET, POST, etc.)
+
+void main() {
+  runApp(const MyApp());
+}
+
+/// Widget raiz da aplicação
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Catálogo de Produtos',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
+      ),
+      home: const TelaListaProdutos(),
+    );
+  }
+}
+
+// ==============================================================================
+// 1. MODELO DE DADOS (MODEL / DTO)
+// ==============================================================================
+class Produto {
+  final int id;
+  final String nome;
+  final double preco;
+  final String? descricao; // Pode ser nulo (opcional)
+  final bool disponivel;
+
+  Produto({
+    required this.id,
+    required this.nome,
+    required this.preco,
+    this.descricao,
+    required this.disponivel,
+  });
+
+  /// Construtor de fábrica (Factory Constructor):
+  /// Recebe um Map&lt;String, dynamic&gt; vindo do jsonDecode e converte para instância de Produto.
+  factory Produto.fromJson(Map&lt;String, dynamic&gt; json) {
+    return Produto(
+      id: json['id'] as int,
+      nome: json['nome'] as String,
+      preco: (json['preco'] as num).toDouble(),
+      descricao: json['descricao'] as String?,
+      disponivel: json['disponivel'] as bool? ?? false,
+    );
+  }
+}
+
+// ==============================================================================
+// 2. TELA PRINCIPAL (STATEFUL WIDGET)
+// ==============================================================================
+class TelaListaProdutos extends StatefulWidget {
+  const TelaListaProdutos({super.key});
+
+  @override
+  State&lt;TelaListaProdutos&gt; createState() =&gt; _TelaListaProdutosState();
+}
+
+class _TelaListaProdutosState extends State&lt;TelaListaProdutos&gt; {
+  // URL da API externa no Render
+  final String _apiUrl = 'https://api-produtos-mobile.onrender.com/produtos';
+
+  // Estados da tela
+  List&lt;Produto&gt; _produtos = [];
+  bool _carregando = true;
+  String? _mensagemErro;
+
+  @override
+  void initState() {
+    super.initState();
+    _buscarProdutos();
+  }
+
+  // ============================================================================
+  // 3. FUNÇÃO ASSÍNCRONA PARA CONSUMIR O MÉTODO GET
+  // ============================================================================
+  Future&lt;void&gt; _buscarProdutos() async {
+    setState(() {
+      _carregando = true;
+      _mensagemErro = null;
+    });
+
+    try {
+      final uri = Uri.parse(_apiUrl);
+      final resposta = await http.get(uri).timeout(
+        const Duration(seconds: 45), // Dá tempo para o Render "acordar" no primeiro acesso
+      );
+
+      if (resposta.statusCode == 200) {
+        // utf8.decode garante acentuação correta
+        final List&lt;dynamic&gt; dadosJson = jsonDecode(utf8.decode(resposta.bodyBytes));
+
+        final List&lt;Produto&gt; listaCarregada = dadosJson
+            .map((item) =&gt; Produto.fromJson(item as Map&lt;String, dynamic&gt;))
+            .toList();
+
+        setState(() {
+          _produtos = listaCarregada;
+          _carregando = false;
+        });
+      } else {
+        setState(() {
+          _mensagemErro = 'Erro no servidor: Código HTTP ${resposta.statusCode}';
+          _carregando = false;
+        });
+      }
+    } on SocketException {
+      setState(() {
+        _mensagemErro = 'Falha de conexão. Verifique sua internet ou a URL da API.';
+        _carregando = false;
+      });
+    } on http.ClientException {
+      setState(() {
+        _mensagemErro = 'Não foi possível conectar ao servidor da API.';
+        _carregando = false;
+      });
+    } catch (e) {
+      setState(() {
+        _mensagemErro = 'Ocorreu um erro inesperado: $e';
+        _carregando = false;
+      });
+    }
+  }
+
+  // ============================================================================
+  // 4. CONSTRUÇÃO DA INTERFACE (UI)
+  // ============================================================================
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Produtos (API Externa)'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Recarregar',
+            onPressed: _carregando ? null : _buscarProdutos,
+          ),
+        ],
+      ),
+      body: _construirCorpo(),
+    );
+  }
+
+  Widget _construirCorpo() {
+    // ESTADO 1: Carregando
+    if (_carregando) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Buscando produtos na API...\n(O servidor no Render pode levar ~40s para acordar)',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ESTADO 2: Erro
+    if (_mensagemErro != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                _mensagemErro!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _buscarProdutos,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tentar Novamente'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ESTADO 3: Lista Vazia
+    if (_produtos.isEmpty) {
+      return const Center(
+        child: Text(
+          'Nenhum produto cadastrado na API.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    // ESTADO 4: Sucesso com RefreshIndicator
+    return RefreshIndicator(
+      onRefresh: _buscarProdutos,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: _produtos.length,
+        itemBuilder: (context, index) {
+          final produto = _produtos[index];
+
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: produto.disponivel
+                        ? Colors.teal.shade50
+                        : Colors.grey.shade200,
+                    foregroundColor: produto.disponivel
+                        ? Colors.teal
+                        : Colors.grey.shade600,
+                    child: Text('#${produto.id}'),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          produto.nome,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (produto.descricao != null &&
+                            produto.descricao!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            produto.descricao!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Text(
+                          'R\$ ${produto.preco.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.teal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Chip(
+                    label: Text(
+                      produto.disponivel ? 'Disponível' : 'Esgotado',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: produto.disponivel
+                            ? Colors.green.shade800
+                            : Colors.red.shade800,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    backgroundColor: produto.disponivel
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    side: BorderSide.none,
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 9 -->
+      <section id="step9" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">9</div>
+          <h2>Executando e Testando a Aplicação</h2>
+        </div>
+        <p>Com o código pronto, siga as etapas abaixo para rodar:</p>
+
+        <ol>
+          <li>Selecione um dispositivo de teste no canto inferior direito do VS Code (Emulador Android, Simulador iOS, Dispositivo Físico via USB ou Chrome/Web).</li>
+          <li>Pressione a tecla <code>F5</code> ou abra o terminal e execute:</li>
+        </ol>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Terminal</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>flutter run</code></pre>
+        </div>
+
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon">🔄</div>
+            <div class="feature-card-title">Testando o Pull to Refresh</div>
+            <div class="feature-card-desc">Arraste a lista para baixo para disparar uma nova requisição na API sem fechar o app.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">✈️</div>
+            <div class="feature-card-title">Testando Modo Offline</div>
+            <div class="feature-card-desc">Coloque o aparelho em Modo Avião e clique no botão de recarregar para ver a tela amigável de erro de conexão.</div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="tutorial-footer">
+        <p>Tutorial desenvolvido para o projeto <strong>Flutter Client &bull; API de Produtos</strong></p>
+        <p style="margin-top: 6px; font-size: 0.8rem; color: #64748b;">Pronto para ser aberto diretamente em qualquer navegador moderno.</p>
+      </footer>
+    </main>
+  </div>
+
+  <button class="back-to-top" id="backToTop" title="Voltar ao topo">↑</button>
+
+  <script>
+    // Barra de progresso de leitura
+    window.addEventListener('scroll', () => {
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('progress-bar').style.width = scrolled + '%';
+
+      // Botão voltar ao topo
+      const backBtn = document.getElementById('backToTop');
+      if (winScroll > 400) {
+        backBtn.classList.add('visible');
+      } else {
+        backBtn.classList.remove('visible');
+      }
+    });
+
+    document.getElementById('backToTop').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Função de copiar código para clipboard
+    function copyCode(button) {
+      const codeElement = button.closest('.code-container').querySelector('pre code');
+      const textToCopy = codeElement.innerText;
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copiado!';
+        button.classList.add('copied');
+
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Erro ao copiar:', err);
+      });
+    }
+
+    // ScrollSpy para a Sidebar
+    const sections = document.querySelectorAll('.tutorial-step, header');
+    const navLinks = document.querySelectorAll('.toc-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
