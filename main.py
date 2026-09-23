@@ -1,6 +1,9 @@
+import os
+import sys
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from fastapi.responses import FileResponse
 
 from models import Produto, ProdutoCreate, ProdutoUpdate
 import database as db
@@ -54,17 +57,23 @@ app.add_middleware(
 )
 
 
+def obter_caminho_tutorial() -> str:
+    """Localiza o arquivo tutorial.html considerando execução local, Render ou PyInstaller."""
+    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, "static", "tutorial.html")
+
 
 @app.get(
     "/",
     tags=["Geral"],
     summary="Página inicial da API",
-    description="Retorna uma mensagem de boas-vindas e instrui onde acessar a documentação interativa."
+    description="Retorna uma mensagem de boas-vindas e instrui onde acessar a documentação interativa e o tutorial."
 )
 def raiz():
     return {
         "mensagem": "🚀 Bem-vindo à API de Exemplo para Desenvolvimento Mobile!",
         "documentacao": "/docs",
+        "tutorial_flutter": "/tutorial",
         "endpoints": {
             "listar_produtos": "GET /produtos",
             "buscar_produto": "GET /produtos/{id}",
@@ -74,6 +83,24 @@ def raiz():
             "conectar_notificacoes": "WS /ws/notificacoes"
         }
     }
+
+
+@app.get(
+    "/tutorial",
+    response_class=FileResponse,
+    tags=["Geral"],
+    summary="Tutorial Flutter interativo",
+    description="Apresenta um tutorial completo em HTML passo a passo para alunos criarem o app cliente Flutter."
+)
+def obter_tutorial():
+    caminho = obter_caminho_tutorial()
+    if not os.path.exists(caminho):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Documento tutorial não encontrado no servidor."
+        )
+    return FileResponse(caminho, media_type="text/html; charset=utf-8")
+
 
 
 @app.get(
@@ -231,6 +258,7 @@ if __name__ == "__main__":
     print("=" * 70)
     print(f"  📖 Documentação Swagger UI:  http://localhost:{porta}/docs")
     print(f"  📖 Documentação ReDoc:       http://localhost:{porta}/redoc")
+    print(f"  📘 Tutorial Flutter (HTML):  http://localhost:{porta}/tutorial")
     print("-" * 70)
     print("  📲 Para Conectar seu App Mobile:")
     print(f"     • Emulador Android:        http://10.0.2.2:{porta}")
