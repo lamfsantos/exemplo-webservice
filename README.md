@@ -110,11 +110,34 @@ Ao programar o app mobile, **não use `localhost` na URL base** (exceto no simul
 | Método | Rota | Descrição |
 | :--- | :--- | :--- |
 | `GET` | `/` | Boas-vindas e resumo dos endpoints disponíveis |
+| `GET, POST` | `/teste-formulario` | Rota didática para a turma de Web 1 testar envio de formulários HTML (GET ou POST) |
 | `GET` | `/produtos` | Retorna a lista de produtos (aceita filtros: `?apenas_disponiveis=true` ou `?busca=termo`) |
 | `GET` | `/produtos/{id}` | Retorna os detalhes de um produto específico |
 | `POST` | `/produtos` | Cadastra um novo produto (cria ID sequencial automático) |
 | `PUT` | `/produtos/{id}` | Atualiza campos de um produto existente |
 | `DELETE` | `/produtos/{id}` | Remove um produto |
+
+---
+
+## 🧪 8. Teste de Formulários HTML (Turma de Web 1)
+
+Os estudantes que estão aprendendo HTML básico podem testar o envio de formulários diretamente apontando o `action` para o servidor (seja rodando localmente ou no Render):
+
+```html
+<form action="https://seu-servidor.onrender.com/teste-formulario" method="POST">
+    <label for="nome">Nome:</label>
+    <input type="text" id="nome" name="nome" required>
+
+    <label for="email">E-mail:</label>
+    <input type="email" id="email" name="email" required>
+
+    <button type="submit">Enviar Formulário</button>
+</form>
+```
+
+- **Acesso direto no navegador (`GET /teste-formulario`):** Exibe um **laboratório interativo** com guia didático e código de exemplo pronto para copiar.
+- **Ao submeter o formulário (`POST` ou `GET`):** O servidor gera uma página estilizada confirmando o recebimento dos dados, destacando quais atributos `name` foram recebidos e os valores digitados.
+- **Suporte a Redirecionamento:** Se o aluno incluir `<input type="hidden" name="_redirect" value="https://exemplo.com">`, o servidor detecta a URL de destino e disponibiliza o redirecionamento.
 
 ---
 

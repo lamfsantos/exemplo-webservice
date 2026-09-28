@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 
 from models import Produto, ProdutoCreate, ProdutoUpdate
 import database as db
+from formulario import formulario_router
 
 # --- SETUP PARA WEBSOCKETS (NOTIFICAÇÕES PUSH) ---
 from fastapi import WebSocket, WebSocketDisconnect
@@ -56,6 +57,9 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# Rotas adicionais para práticas de Web 1 (teste de formulários)
+app.include_router(formulario_router)
+
 
 def obter_caminho_static(nome_arquivo: str) -> str:
     """Localiza arquivos na pasta static considerando execução local, Render ou PyInstaller."""
@@ -71,11 +75,12 @@ def obter_caminho_static(nome_arquivo: str) -> str:
 )
 def raiz():
     return {
-        "mensagem": "🚀 Bem-vindo à API de Exemplo para Desenvolvimento Mobile!",
+        "mensagem": "🚀 Bem-vindo à API de Exemplo para Desenvolvimento Mobile & Web!",
         "documentacao": "/docs",
         "tutoriais": {
             "atividade_1_produtos_api": "/tutorial",
-            "atividade_2_notificacoes_push": "/tutorial-notificacoes"
+            "atividade_2_notificacoes_push": "/tutorial-notificacoes",
+            "web_1_teste_formulario": "/teste-formulario"
         },
         "endpoints": {
             "listar_produtos": "GET /produtos",
@@ -83,7 +88,8 @@ def raiz():
             "criar_produto": "POST /produtos",
             "atualizar_produto": "PUT /produtos/{id}",
             "remover_produto": "DELETE /produtos/{id}",
-            "conectar_notificacoes": "WS /ws/notificacoes"
+            "conectar_notificacoes": "WS /ws/notificacoes",
+            "teste_formulario_html": "GET, POST /teste-formulario"
         }
     }
 
@@ -286,6 +292,7 @@ if __name__ == "__main__":
     print(f"  📖 Documentação ReDoc:       http://localhost:{porta}/redoc")
     print(f"  📘 Atividade 1 (Produtos):   http://localhost:{porta}/tutorial")
     print(f"  🔔 Atividade 2 (Push WSS):   http://localhost:{porta}/tutorial-notificacoes")
+    print(f"  📝 Web 1 (Teste Form HTML):  http://localhost:{porta}/teste-formulario")
     print("-" * 70)
     print("  📲 Para Conectar seu App Mobile:")
     print(f"     • Emulador Android:        http://10.0.2.2:{porta}")
