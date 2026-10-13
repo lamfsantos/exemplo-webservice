@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "nome": "Administrador",
+    "senha_hash": "$2b$12$IGVyykEdqsuljV0dgRZsLucbV3Ycq4oyBOCZH6OPssh/J.WC4T2yC"
+  },
+  {
+    "id": 2,
+    "username": "aluno",
+    "nome": "Aluno Exemplo",
+    "senha_hash": "$2b$12$lwMkQGtdlgxjQn9hEmv8GeXgYJ33zN8p/HQiSNZrhOlSw1AGLMFiq"
+  }
+]

@@ -111,6 +111,10 @@ Ao programar o app mobile, **não use `localhost` na URL base** (exceto no simul
 | :--- | :--- | :--- |
 | `GET` | `/` | Boas-vindas e resumo dos endpoints disponíveis |
 | `GET, POST` | `/teste-formulario` | Rota didática para a turma de Web 1 testar envio de formulários HTML (GET ou POST) |
+| `POST` | `/auth/cadastrar` | Cadastra um novo usuário com senha criptografada via BCrypt |
+| `POST` | `/auth/login` | Login com envio de JSON (ideal para apps Mobile Flutter/React Native/Android/iOS) |
+| `POST` | `/auth/token` | Login OAuth2 via formulário (compatível com o botão "Authorize" do Swagger UI) |
+| `GET` | `/auth/me` | Rota protegida de exemplo: retorna os dados do usuário autenticado |
 | `GET` | `/produtos` | Retorna a lista de produtos (aceita filtros: `?apenas_disponiveis=true` ou `?busca=termo`) |
 | `GET` | `/produtos/{id}` | Retorna os detalhes de um produto específico |
 | `POST` | `/produtos` | Cadastra um novo produto (cria ID sequencial automático) |
@@ -187,15 +191,87 @@ Os estudantes que estão aprendendo HTML básico podem testar o envio de formul�
 
 ---
 
-## 📁 9. Estrutura do Projeto
+---
+
+## 🔐 9. Sistema de Autenticação com JWT
+
+A API inclui um sistema completo de controle de acesso baseado em **JSON Web Tokens (JWT)** e senhas criptografadas com **BCrypt**:
+
+### 👤 Usuários Padrão para Testes Rápidos
+Caso o arquivo `usuarios.json` não exista, ele será criado automaticamente com as contas:
+- **Admin:** Usuário `admin` | Senha: `admin123`
+- **Aluno:** Usuário `aluno` | Senha: `123456`
+
+### 📝 Cadastro de Novos Usuários (`POST /auth/cadastrar`)
+**Corpo da Requisição (JSON):**
+```json
+{
+  "username": "meu_usuario",
+  "senha": "minhasenhaforte",
+  "nome": "Meu Nome Completo"
+}
+```
+**Resposta (`201 Created`):**
+```json
+{
+  "id": 3,
+  "username": "meu_usuario",
+  "nome": "Meu Nome Completo"
+}
+```
+
+### 🔑 Login nos Aplicativos Mobile & Web (`POST /auth/login`)
+Envie os dados como JSON:
+```json
+{
+  "username": "aluno",
+  "senha": "123456"
+}
+```
+**Resposta (`200 OK`):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+### 🔒 Login no Swagger UI (`POST /auth/token`)
+- No navegador ([http://localhost:8000/docs](http://localhost:8000/docs)), clique no botão verde **Authorize** (cadeado).
+- Digite `aluno` e `123456`.
+- Todas as rotas testadas no Swagger passarão a incluir o cabeçalho `Authorization: Bearer <token>` automaticamente!
+
+### 🛡️ Como Proteger Rotas em Aula (Passo a Passo)
+Nenhuma rota de produtos vem protegida por padrão para não quebrar testes iniciais. Para proteger qualquer rota existente durante a aula (ex: `POST /produtos`), basta adicionar a dependência `Depends(obter_usuario_atual)`:
+
+```python
+from fastapi import Depends
+from auth import obter_usuario_atual
+from models import Usuario
+
+@app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
+def criar_produto(
+    novo_produto: ProdutoCreate, 
+    usuario_logado: Usuario = Depends(obter_usuario_atual)  # <-- BASTA ADICIONAR ESTA LINHA!
+):
+    print(f"Produto cadastrado por: {usuario_logado.username}")
+    return db.criar_produto(novo_produto)
+```
+
+---
+
+## 📁 10. Estrutura do Projeto
 
 ```
 exemplo/
 ├── main.py             # Rotas da API, configurações de CORS, banner e entrypoint
-├── database.py         # Leitura, escrita e persistência no arquivo JSON (suporte a standalone/frozen)
-├── models.py           # Modelos de validação Pydantic (schemas da API)
-├── produtos.json       # Base de dados em formato JSON
-├── requirements.txt    # Dependências do projeto (FastAPI, Uvicorn, Pydantic, PyInstaller)
+├── auth.py             # Lógica JWT, hash bcrypt, dependência de autenticação e rotas /auth
+├── database.py         # Leitura, escrita e persistência nos arquivos JSON (produtos e usuários)
+├── models.py           # Modelos de validação Pydantic (produtos, usuários, login e tokens)
+├── produtos.json       # Base de dados de produtos em formato JSON
+├── usuarios.json       # Base de dados de usuários em formato JSON (senhas em hash bcrypt)
+├── formulario.py       # Módulo para suporte a testes práticos de formulários Web 1
+├── requirements.txt    # Dependências do projeto (FastAPI, PyJWT, bcrypt, python-multipart, etc.)
 ├── build.bat           # Script de geração do .exe para Windows
 ├── build.sh            # Script de geração de executável para Linux/macOS
 ├── dist/               # Pasta onde o executável final compilado é gerado

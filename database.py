@@ -2,7 +2,7 @@ import json
 import os
 import sys
 from typing import List, Optional
-from models import Produto, ProdutoCreate, ProdutoUpdate
+from models import Produto, ProdutoCreate, ProdutoUpdate, Usuario, UsuarioCreate, UsuarioNoBanco
 
 # Se compilado pelo PyInstaller (frozen), o caminho base é a pasta do .exe
 if getattr(sys, 'frozen', False):
@@ -11,6 +11,24 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DB_FILE = os.path.join(BASE_DIR, "produtos.json")
+USUARIOS_FILE = os.path.join(BASE_DIR, "usuarios.json")
+
+# Usuários padrão criados caso o arquivo usuarios.json ainda não exista
+# Senha de admin: admin123 | Senha de aluno: 123456
+USUARIOS_PADRAO = [
+    {
+        "id": 1,
+        "username": "admin",
+        "nome": "Administrador",
+        "senha_hash": "$2b$12$IGVyykEdqsuljV0dgRZsLucbV3Ycq4oyBOCZH6OPssh/J.WC4T2yC"
+    },
+    {
+        "id": 2,
+        "username": "aluno",
+        "nome": "Aluno Exemplo",
+        "senha_hash": "$2b$12$lwMkQGtdlgxjQn9hEmv8GeXgYJ33zN8p/HQiSNZrhOlSw1AGLMFiq"
+    }
+]
 
 DADOS_PADRAO = [
     {
@@ -123,3 +141,80 @@ def remover_produto(produto_id: int) -> bool:
         
     salvar_produtos(nova_lista)
     return True
+
+
+# =====================================================================
+# OPERAÇÕES DE USUÁRIOS (PERSISTÊNCIA EM usuarios.json)
+# =====================================================================
+
+def carregar_usuarios() -> List[dict]:
+    """Lê o arquivo usuarios.json e retorna a lista de usuários. Se não existir, cria com dados padrão."""
+    if not os.path.exists(USUARIOS_FILE):
+        salvar_usuarios(USUARIOS_PADRAO)
+        return list(USUARIOS_PADRAO)
+    
+    try:
+        with open(USUARIOS_FILE, "r", encoding="utf-8") as f:
+            conteudo = f.read().strip()
+            if not conteudo:
+                salvar_usuarios(USUARIOS_PADRAO)
+                return list(USUARIOS_PADRAO)
+            return json.loads(conteudo)
+    except (json.JSONDecodeError, OSError):
+        return list(USUARIOS_PADRAO)
+
+
+def salvar_usuarios(usuarios: List[dict]) -> None:
+    """Grava a lista de usuários no arquivo JSON com formatação legível."""
+    with open(USUARIOS_FILE, "w", encoding="utf-8") as f:
+        json.dump(usuarios, f, indent=2, ensure_ascii=False)
+
+
+def listar_usuarios() -> List[Usuario]:
+    """Retorna todos os usuários cadastrados sem expor as senhas."""
+    dados = carregar_usuarios()
+    return [
+        Usuario(id=u["id"], username=u["username"], nome=u.get("nome"))
+        for u in dados
+    ]
+
+
+def buscar_usuario_por_username(username: str) -> Optional[UsuarioNoBanco]:
+    """Busca um usuário pelo username exato (compara de forma case-insensitive)."""
+    dados = carregar_usuarios()
+    username_alvo = username.strip().lower()
+    for u in dados:
+        if u.get("username", "").strip().lower() == username_alvo:
+            return UsuarioNoBanco(**u)
+    return None
+
+
+def buscar_usuario_por_id(usuario_id: int) -> Optional[Usuario]:
+    """Busca um usuário pelo ID numérico sem expor a senha."""
+    dados = carregar_usuarios()
+    for u in dados:
+        if u.get("id") == usuario_id:
+            return Usuario(id=u["id"], username=u["username"], nome=u.get("nome"))
+    return None
+
+
+def criar_usuario(novo_usuario: UsuarioCreate, senha_hash: str) -> Usuario:
+    """Gera um novo ID sequencial, adiciona o usuário com senha criptografada e persiste no JSON."""
+    dados = carregar_usuarios()
+    proximo_id = max([u.get("id", 0) for u in dados], default=0) + 1
+
+    usuario_dict = {
+        "id": proximo_id,
+        "username": novo_usuario.username.strip(),
+        "nome": novo_usuario.nome.strip() if novo_usuario.nome else None,
+        "senha_hash": senha_hash
+    }
+
+    dados.append(usuario_dict)
+    salvar_usuarios(dados)
+
+    return Usuario(
+        id=proximo_id,
+        username=usuario_dict["username"],
+        nome=usuario_dict["nome"]
+    )

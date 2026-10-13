@@ -37,3 +37,55 @@ class Produto(ProdutoBase):
                 "disponivel": True
             }
         }
+
+
+# =====================================================================
+# MODELOS DE USUÁRIO E AUTENTICAÇÃO JWT
+# =====================================================================
+
+class UsuarioBase(BaseModel):
+    """Modelo base para usuário com campos comuns."""
+    username: str = Field(..., example="aluno", description="Nome de usuário para login")
+    nome: Optional[str] = Field(None, example="João da Silva", description="Nome completo do usuário")
+
+
+class UsuarioCreate(UsuarioBase):
+    """Modelo utilizado para o cadastro de novo usuário (POST /auth/cadastrar)."""
+    senha: str = Field(..., min_length=4, example="123456", description="Senha de acesso (mínimo 4 caracteres)")
+
+
+class Usuario(UsuarioBase):
+    """Modelo público do usuário retornado pela API (sem senha)."""
+    id: int = Field(..., example=1, description="Identificador único do usuário")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "username": "aluno",
+                "nome": "João da Silva"
+            }
+        }
+
+
+class UsuarioNoBanco(Usuario):
+    """Modelo interno do usuário com o hash da senha armazenado no JSON."""
+    senha_hash: str = Field(..., description="Hash criptografado da senha com bcrypt")
+
+
+class LoginRequest(BaseModel):
+    """Modelo para login via corpo JSON (POST /auth/login), ideal para apps Mobile e Web."""
+    username: str = Field(..., example="aluno", description="Nome de usuário")
+    senha: str = Field(..., example="123456", description="Senha de acesso")
+
+
+class Token(BaseModel):
+    """Modelo de resposta contendo o token de acesso JWT retornado no login."""
+    access_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", description="Token de acesso JWT")
+    token_type: str = Field("bearer", example="bearer", description="Tipo do token (sempre 'bearer')")
+
+
+class TokenData(BaseModel):
+    """Dados decodificados do payload do token JWT."""
+    username: Optional[str] = None
+

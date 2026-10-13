@@ -1,13 +1,14 @@
 import os
 import sys
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, status, Query
+from fastapi import FastAPI, HTTPException, status, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from models import Produto, ProdutoCreate, ProdutoUpdate
+from models import Produto, ProdutoCreate, ProdutoUpdate, Usuario
 import database as db
 from formulario import formulario_router
+from auth import auth_router, obter_usuario_atual
 
 # --- SETUP PARA WEBSOCKETS (NOTIFICAÇÕES PUSH) ---
 from fastapi import WebSocket, WebSocketDisconnect
@@ -60,6 +61,9 @@ app.add_middleware(
 # Rotas adicionais para práticas de Web 1 (teste de formulários)
 app.include_router(formulario_router)
 
+# Rotas de Autenticação JWT (Cadastro, Login JSON, Token OAuth2 e Consulta de Perfil)
+app.include_router(auth_router)
+
 
 def obter_caminho_static(nome_arquivo: str) -> str:
     """Localiza arquivos na pasta static considerando execução local, Render ou PyInstaller."""
@@ -88,6 +92,10 @@ def raiz():
             "criar_produto": "POST /produtos",
             "atualizar_produto": "PUT /produtos/{id}",
             "remover_produto": "DELETE /produtos/{id}",
+            "autenticacao_cadastro": "POST /auth/cadastrar",
+            "autenticacao_login_json": "POST /auth/login",
+            "autenticacao_token_oauth2": "POST /auth/token",
+            "autenticacao_perfil": "GET /auth/me",
             "conectar_notificacoes": "WS /ws/notificacoes",
             "teste_formulario_html": "GET, POST /teste-formulario"
         }
@@ -177,6 +185,18 @@ def buscar_produto(produto_id: int):
         )
     return produto
 
+
+# =====================================================================
+# DICA DIDÁTICA PARA PROTEGER ROTAS COM JWT EM AULA:
+# Para exigir autenticação em qualquer endpoint abaixo (ex: POST, PUT, DELETE),
+# basta adicionar a dependência 'usuario_logado: Usuario = Depends(obter_usuario_atual)'
+# como parâmetro da função.
+#
+# Exemplo protegido:
+# @app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
+# def criar_produto(novo_produto: ProdutoCreate, usuario_logado: Usuario = Depends(obter_usuario_atual)):
+#     return db.criar_produto(novo_produto)
+# =====================================================================
 
 @app.post(
     "/produtos",
@@ -293,13 +313,15 @@ if __name__ == "__main__":
     print(f"  📘 Atividade 1 (Produtos):   http://localhost:{porta}/tutorial")
     print(f"  🔔 Atividade 2 (Push WSS):   http://localhost:{porta}/tutorial-notificacoes")
     print(f"  📝 Web 1 (Teste Form HTML):  http://localhost:{porta}/teste-formulario")
+    print(f"  🔐 Autenticação JWT:       http://localhost:{porta}/auth/login (Swagger: /docs)")
     print("-" * 70)
     print("  📲 Para Conectar seu App Mobile:")
     print(f"     • Emulador Android:        http://10.0.2.2:{porta}")
     print(f"     • Simulador iOS / Web:     http://localhost:{porta}")
     print(f"     • Aparelho Físico (Wi-Fi): http://{ip_local}:{porta}")
     print("-" * 70)
-    print(f"  💾 Arquivo de Dados (JSON):  {db.DB_FILE}")
+    print(f"  💾 Banco de Produtos (JSON): {db.DB_FILE}")
+    print(f"  💾 Banco de Usuários (JSON): {db.USUARIOS_FILE}")
     print("  💡 Pressione CTRL + C para encerrar o servidor a qualquer momento.")
     print("=" * 70 + "\n")
 
