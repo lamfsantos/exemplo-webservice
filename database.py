@@ -10,8 +10,12 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DB_FILE = os.path.join(BASE_DIR, "produtos.json")
-USUARIOS_FILE = os.path.join(BASE_DIR, "usuarios.json")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DB_FILE = os.path.join(DATA_DIR, "produtos.json")
+USUARIOS_FILE = os.path.join(DATA_DIR, "usuarios.json")
+
 
 # Usuários padrão criados caso o arquivo usuarios.json ainda não exista
 # Senha de admin: admin123 | Senha de aluno: 123456

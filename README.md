@@ -249,7 +249,7 @@ from fastapi import Depends
 from auth import obter_usuario_atual
 from models import Usuario
 
-@app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
+@produtos_router.post("", response_model=Produto, status_code=status.HTTP_201_CREATED)
 def criar_produto(
     novo_produto: ProdutoCreate, 
     usuario_logado: Usuario = Depends(obter_usuario_atual)  # <-- BASTA ADICIONAR ESTA LINHA!
@@ -264,16 +264,24 @@ def criar_produto(
 
 ```
 exemplo/
-├── main.py             # Rotas da API, configurações de CORS, banner e entrypoint
-├── auth.py             # Lógica JWT, hash bcrypt, dependência de autenticação e rotas /auth
-├── database.py         # Leitura, escrita e persistência nos arquivos JSON (produtos e usuários)
-├── models.py           # Modelos de validação Pydantic (produtos, usuários, login e tokens)
-├── produtos.json       # Base de dados de produtos em formato JSON
-├── usuarios.json       # Base de dados de usuários em formato JSON (senhas em hash bcrypt)
-├── formulario.py       # Módulo para suporte a testes práticos de formulários Web 1
-├── requirements.txt    # Dependências do projeto (FastAPI, PyJWT, bcrypt, python-multipart, etc.)
-├── build.bat           # Script de geração do .exe para Windows
-├── build.sh            # Script de geração de executável para Linux/macOS
-├── dist/               # Pasta onde o executável final compilado é gerado
-└── README.md           # Guia de uso e dicas para desenvolvimento mobile
+├── main.py                 # Entrypoint da API: FastAPI, CORS, inclusão dos roteadores e banner
+├── auth.py                 # Segurança: hash de senhas (bcrypt), tokens JWT e dependência de autenticação
+├── database.py             # Leitura, escrita e persistência nos arquivos JSON (produtos e usuários)
+├── models.py               # Modelos Pydantic (produtos, usuários, login e tokens)
+├── data/                   # Pasta dedicada aos arquivos de dados JSON
+│   ├── produtos.json       # Base de dados de produtos em formato JSON
+│   └── usuarios.json       # Base de dados de usuários em formato JSON (senhas em hash bcrypt)
+├── routers/                # Roteadores modulares organizados por domínio
+│   ├── __init__.py         # Pacote de exportação dos roteadores
+│   ├── produtos.py         # Endpoints de gerenciamento de produtos (/produtos)
+│   ├── auth.py             # Endpoints de cadastro e autenticação (/auth)
+│   ├── notificacoes.py     # WebSockets e disparo de notificações push (/ws/notificacoes)
+│   └── formulario.py       # Laboratório prático de formulários HTML para Web 1
+├── disparar_push.py        # Script interativo via CLI para disparar notificações
+├── requirements.txt        # Dependências do projeto (FastAPI, PyJWT, bcrypt, python-multipart, etc.)
+├── build.bat               # Script de geração do .exe para Windows
+├── build.sh                # Script de geração de executável para Linux/macOS
+├── dist/                   # Pasta onde o executável final compilado é gerado
+└── README.md               # Guia de uso e dicas para desenvolvimento mobile
 ```
+
