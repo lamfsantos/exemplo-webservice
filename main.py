@@ -1,39 +1,16 @@
 import os
 import sys
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, status, Query, Depends
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from models import Produto, ProdutoCreate, ProdutoUpdate, Usuario
 import database as db
-from formulario import formulario_router
-from auth import auth_router, obter_usuario_atual
-
-# --- SETUP PARA WEBSOCKETS (NOTIFICAÇÕES PUSH) ---
-from fastapi import WebSocket, WebSocketDisconnect
-
-class NotificacaoManager:
-    def __init__(self):
-        self.conexoes_ativas: List[WebSocket] = []
-
-    async def conectar(self, websocket: WebSocket):
-        await websocket.accept()
-        self.conexoes_ativas.append(websocket)
-
-    def desconectar(self, websocket: WebSocket):
-        if websocket in self.conexoes_ativas:
-            self.conexoes_ativas.remove(websocket)
-
-    async def enviar_para_todos(self, mensagem: dict):
-        for conexao in self.conexoes_ativas:
-            try:
-                await conexao.send_json(mensagem)
-            except Exception:
-                pass
-
-notificacoes_manager = NotificacaoManager()
-# --------------------------------------------------
+from routers import (
+    produtos_router,
+    auth_router,
+    notificacoes_router,
+    formulario_router,
+)
 
 # Criação da instância da aplicação com metadados para o Swagger UI
 app = FastAPI(
@@ -58,11 +35,13 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Rotas adicionais para práticas de Web 1 (teste de formulários)
-app.include_router(formulario_router)
-
-# Rotas de Autenticação JWT (Cadastro, Login JSON, Token OAuth2 e Consulta de Perfil)
+# =====================================================================
+# INCLUSÃO DOS ROTEADORES MODULARES
+# =====================================================================
+app.include_router(produtos_router)
 app.include_router(auth_router)
+app.include_router(notificacoes_router)
+app.include_router(formulario_router)
 
 
 def obter_caminho_static(nome_arquivo: str) -> str:
@@ -141,149 +120,6 @@ def obter_tutorial_notificacoes():
     return FileResponse(caminho, media_type="text/html; charset=utf-8")
 
 
-
-
-@app.get(
-    "/produtos",
-    response_model=List[Produto],
-    tags=["Produtos"],
-    summary="Listar todos os produtos",
-    description="Retorna a lista completa de produtos cadastrados. Permite filtrar por disponibilidade ou termo de busca."
-)
-def listar_produtos(
-    apenas_disponiveis: Optional[bool] = Query(None, description="Se true, lista apenas produtos disponíveis"),
-    busca: Optional[str] = Query(None, description="Filtrar produtos por termo no nome ou descrição")
-):
-    produtos = db.listar_todos()
-    
-    if apenas_disponiveis is not None:
-        produtos = [p for p in produtos if p.disponivel == apenas_disponiveis]
-        
-    if busca:
-        termo = busca.lower()
-        produtos = [
-            p for p in produtos 
-            if termo in p.nome.lower() or (p.descricao and termo in p.descricao.lower())
-        ]
-        
-    return produtos
-
-
-@app.get(
-    "/produtos/{produto_id}",
-    response_model=Produto,
-    tags=["Produtos"],
-    summary="Buscar produto por ID",
-    description="Retorna os detalhes de um produto a partir de seu ID numérico."
-)
-def buscar_produto(produto_id: int):
-    produto = db.buscar_por_id(produto_id)
-    if not produto:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Produto com ID {produto_id} não encontrado."
-        )
-    return produto
-
-
-# =====================================================================
-# DICA DIDÁTICA PARA PROTEGER ROTAS COM JWT EM AULA:
-# Para exigir autenticação em qualquer endpoint abaixo (ex: POST, PUT, DELETE),
-# basta adicionar a dependência 'usuario_logado: Usuario = Depends(obter_usuario_atual)'
-# como parâmetro da função.
-#
-# Exemplo protegido:
-# @app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
-# def criar_produto(novo_produto: ProdutoCreate, usuario_logado: Usuario = Depends(obter_usuario_atual)):
-#     return db.criar_produto(novo_produto)
-# =====================================================================
-
-@app.post(
-    "/produtos",
-    response_model=Produto,
-    status_code=status.HTTP_201_CREATED,
-    tags=["Produtos"],
-    summary="Cadastrar novo produto",
-    description="Cria um novo produto com ID sequencial automático e salva no arquivo JSON."
-)
-def criar_produto(novo_produto: ProdutoCreate):
-    return db.criar_produto(novo_produto)
-
-
-@app.put(
-    "/produtos/{produto_id}",
-    response_model=Produto,
-    tags=["Produtos"],
-    summary="Atualizar produto existente",
-    description="Atualiza um ou mais campos de um produto existente. Campos omitidos permanecem inalterados."
-)
-def atualizar_produto(produto_id: int, dados: ProdutoUpdate):
-    produto_atualizado = db.atualizar_produto(produto_id, dados)
-    if not produto_atualizado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Produto com ID {produto_id} não encontrado para atualização."
-        )
-    return produto_atualizado
-
-
-@app.delete(
-    "/produtos/{produto_id}",
-    status_code=status.HTTP_200_OK,
-    tags=["Produtos"],
-    summary="Remover produto",
-    description="Exclui um produto do arquivo JSON a partir do seu ID."
-)
-def remover_produto(produto_id: int):
-    sucesso = db.remover_produto(produto_id)
-    if not sucesso:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Produto com ID {produto_id} não encontrado para exclusão."
-        )
-    return {
-        "sucesso": True,
-        "mensagem": f"Produto com ID {produto_id} removido com sucesso."
-    }
-
-
-# --- ENDPOINTS PARA SIMULAÇÃO DE NOTIFICAÇÕES PUSH ---
-from pydantic import BaseModel
-
-class NotificacaoPayload(BaseModel):
-    titulo: str = "Aviso do Professor"
-    mensagem: str = "Nova funcionalidade liberada!"
-
-@app.websocket("/ws/notificacoes")
-async def websocket_notificacoes(websocket: WebSocket):
-    """
-    Endpoint WebSocket para os apps dos alunos se conectarem.
-    Fica aguardando mensagens enviadas pelo servidor.
-    """
-    await notificacoes_manager.conectar(websocket)
-    try:
-        while True:
-            # O servidor fica ouvindo, caso o client mande algo, apenas ignoramos ou tratamos
-            _ = await websocket.receive_text()
-    except WebSocketDisconnect:
-        notificacoes_manager.desconectar(websocket)
-
-@app.post(
-    "/notificacoes/enviar", 
-    tags=["Notificações"], 
-    summary="Disparar notificação para todos os apps conectados",
-    description="Endpoint usado pelo professor para enviar um Push simulado para todo mundo."
-)
-async def disparar_notificacao_geral(payload: NotificacaoPayload):
-    # Em pydantic v2 usamos model_dump, se der erro cai pro .dict()
-    dados = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
-    await notificacoes_manager.enviar_para_todos(dados)
-    return {
-        "sucesso": True, 
-        "mensagem": f"Notificação disparada para {len(notificacoes_manager.conexoes_ativas)} dispositivos conectados!"
-    }
-
-
 def obter_ip_local() -> str:
     """Detecta o endereço IP local da máquina na rede Wi-Fi / Ethernet."""
     import socket
@@ -326,4 +162,3 @@ if __name__ == "__main__":
     print("=" * 70 + "\n")
 
     uvicorn.run(app, host="0.0.0.0", port=porta, log_level="info")
-
