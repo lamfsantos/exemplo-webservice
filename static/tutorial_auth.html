@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial Flutter: Autenticação JWT, Login e Cadastro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #e0e7ff;
+      --accent: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #0b1120;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+      z-index: 1000;
+      width: 0%;
+      transition: width 0.1s ease;
+    }
+
+    .layout-wrapper {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar {
+      width: 320px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      padding: 2.5rem 1.5rem;
+      border-right: 1px solid var(--border);
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: #a5b4fc;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-left: 0.5rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toc-link {
+      display: block;
+      padding: 0.6rem 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border-left: 2px solid transparent;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      color: #a5b4fc;
+      background-color: rgba(99, 102, 241, 0.12);
+      border-left-color: #6366f1;
+      padding-left: 1rem;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 3rem 4rem 6rem;
+      max-width: 980px;
+      min-width: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #a5b4fc;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #818cf8;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    h1 {
+      font-size: 2.65rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lead-text {
+      font-size: 1.15rem;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    .tutorial-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+      padding: 1.25rem;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .meta-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    /* Mockup do Aplicativo */
+    .app-preview-wrapper {
+      margin: 2.5rem 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-mockup {
+      width: 360px;
+      background: #000000;
+      border-radius: 36px;
+      padding: 12px;
+      border: 4px solid #334155;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .phone-screen {
+      background: #0f172a;
+      border-radius: 26px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+      color: #f8fafc;
+      position: relative;
+    }
+
+    .mock-appbar {
+      background: #1e293b;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .mock-content {
+      flex: 1;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .mock-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .mock-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .mock-subtitle {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    .mock-input {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mock-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #ffffff;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 6px;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .mock-link {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #a5b4fc;
+    }
+
+    .mock-jwt-pill {
+      margin-top: 16px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tutorial-step {
+      margin-bottom: 4rem;
+      padding-top: 1rem;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-number {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 1.75rem 0 1rem;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p {
+      color: #cbd5e1;
+      margin-bottom: 1.25rem;
+    }
+
+    strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    ul, ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 0.6rem;
+    }
+
+    .callout {
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius);
+      margin: 1.75rem 0;
+      border-left: 4px solid;
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .callout-info {
+      border-left-color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .callout-tip {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .callout-warning {
+      border-left-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .callout-info .callout-title { color: #818cf8; }
+    .callout-tip .callout-title { color: #34d399; }
+    .callout-warning .callout-title { color: #fbbf24; }
+
+    .code-container {
+      margin: 1.5rem 0;
+      border-radius: var(--radius);
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      background: rgba(30, 41, 59, 0.6);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .code-filename {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.825rem;
+      color: #94a3b8;
+    }
+
+    .copy-btn {
+      background: rgba(51, 65, 85, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #6366f1;
+      color: #ffffff;
+      border-color: #6366f1;
+    }
+
+    .copy-btn.copied {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+
+    pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+
+    code {
+      font-family: 'Fira Code', monospace;
+      background: rgba(51, 65, 85, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #c7d2fe;
+      font-size: 0.9em;
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* Diagrama de fluxo com blocos */
+    .flow-diagram {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .flow-step-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #1e293b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-left: 4px solid #6366f1;
+    }
+
+    .flow-step-box.highlight {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .flow-num {
+      font-weight: 800;
+      color: #818cf8;
+      font-size: 1rem;
+      min-width: 24px;
+    }
+
+    .flow-desc {
+      font-size: 0.9rem;
+      color: #e2e8f0;
+    }
+
+    /* Credential Cards */
+    .cred-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .cred-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cred-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cred-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .cred-badge.aluno { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+    .cred-badge.admin { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+
+    .tutorial-footer {
+      margin-top: 5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .back-to-top {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #6366f1;
+      color: white;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+      z-index: 99;
+    }
+
+    .back-to-top.visible {
+      opacity: 1;
+    }
+
+    .back-to-top:hover {
+      transform: translateY(-3px);
+      background: #4f46e5;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        padding: 2rem 1.5rem 5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="progress-bar"></div>
+
+  <div class="layout-wrapper">
+    <!-- BARRA LATERAL (SUMÁRIO) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🔐</div>
+        <div>
+          <div class="brand-title">API & Flutter</div>
+          <div class="brand-subtitle">Atividade 3: Autenticação</div>
+        </div>
+      </div>
+
+      <div class="toc-title">Navegação do Tutorial</div>
+      <ul class="toc-list">
+        <li><a href="#intro" class="toc-link">Visão Geral & JWT</a></li>
+        <li><a href="#step1" class="toc-link">1. Pacotes (pubspec.yaml)</a></li>
+        <li><a href="#step2" class="toc-link">2. Modelos de Dados</a></li>
+        <li><a href="#step3" class="toc-link">3. Serviço de Auth</a></li>
+        <li><a href="#step4" class="toc-link">4. Tela de Login</a></li>
+        <li><a href="#step5" class="toc-link">5. Tela de Cadastro</a></li>
+        <li><a href="#step6" class="toc-link">6. Conectar Sessão & Logout</a></li>
+        <li><a href="#step7" class="toc-link">7. Código Completo main.dart</a></li>
+        <li><a href="#step8" class="toc-link">8. Como Testar</a></li>
+      </ul>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="main-content">
+      <header id="intro">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          <span>Segurança & Autenticação Mobile</span>
+        </div>
+        <h1>Tutorial Flutter: Autenticação com JWT, Login e Cadastro</h1>
+        <p class="lead-text">
+          Aprenda a construir um fluxo completo de autenticação moderna em Flutter: tela de login com tratamento de erros, cadastro de novos usuários, recebimento do token JWT e persistência segura da sessão com <code>shared_preferences</code>.
+        </p>
+
+        <div class="tutorial-meta">
+          <div class="meta-item">
+            <span class="meta-label">Tecnologias</span>
+            <span class="meta-val">Flutter, Dart, FastAPI, JWT</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Duração Estimada</span>
+            <span class="meta-val">45 a 60 minutos</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Dificuldade</span>
+            <span class="meta-val">Intermediário</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Endpoints Utilizados</span>
+            <span class="meta-val">/auth/login, /auth/cadastrar, /auth/me</span>
+          </div>
+        </div>
+
+        <!-- MOCKUP DO APP -->
+        <div class="app-preview-wrapper">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="mock-appbar">
+                <span>🔐 Catálogo de Produtos</span>
+                <span style="font-size: 0.8rem; opacity: 0.7;">v1.0</span>
+              </div>
+              <div class="mock-content">
+                <div class="mock-logo">🛡️</div>
+                <div class="mock-title">Bem-vindo de volta!</div>
+                <div class="mock-subtitle">Entre com suas credenciais para continuar</div>
+                
+                <div class="mock-input">
+                  <span>👤</span>
+                  <span>aluno</span>
+                </div>
+                <div class="mock-input">
+                  <span>🔑</span>
+                  <span>••••••••</span>
+                </div>
+                
+                <div class="mock-btn">Entrar no Aplicativo</div>
+                
+                <div class="mock-link">Não tem conta? <strong>Cadastre-se aqui</strong></div>
+
+                <div class="mock-jwt-pill">
+                  <span>✓</span> Token Bearer JWT Ativo
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-title">💡 O que é o JWT (JSON Web Token)?</div>
+          <p>
+            Pense no <strong>JWT</strong> como um <strong>crachá digital de acesso</strong>. Quando o usuário envia seu login e senha corretos para a API (<code>POST /auth/login</code>), o servidor emite esse crachá assinado digitalmente.
+          </p>
+          <p>
+            O app Flutter guarda esse crachá na memória do celular e, em todas as próximas requisições protegidas, apenas apresenta o crachá no cabeçalho <code>Authorization: Bearer &lt;token&gt;</code>. Assim, o servidor sabe quem é você sem precisar pedir sua senha a cada clique!
+          </p>
+        </div>
+
+        <div class="flow-diagram">
+          <div style="font-weight: 700; color: #a5b4fc; font-size: 0.95rem; margin-bottom: 4px;">Fluxo de Vida da Sessão no App:</div>
+          <div class="flow-step-box">
+            <span class="flow-num">1</span>
+            <span class="flow-desc"><strong>Usuário digita credenciais</strong> e clica em Entrar na <code>LoginPage</code></span>
+          </div>
+          <div class="flow-step-box">
+            <span class="flow-num">2</span>
+            <span class="flow-desc">App dispara <code>POST /auth/login</code> com o corpo JSON <code>{"username": "...", "senha": "..."}</code></span>
+          </div>
+          <div class="flow-step-box highlight">
+            <span class="flow-num">3</span>
+            <span class="flow-desc">Servidor valida com <strong>BCrypt</strong> e responde <code>200 OK</code> com o <code>access_token</code> JWT</span>
+          </div>
+          <div class="flow-step-box">
+            <span class="flow-num">4</span>
+            <span class="flow-desc">App salva o token localmente com <code>SharedPreferences</code> e navega para a lista de produtos</span>
+          </div>
+          <div class="flow-step-box">
+            <span class="flow-num">5</span>
+            <span class="flow-desc">Ao reabrir o aplicativo, o app lê o token salvo e entra direto, sem pedir login novamente!</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- PASSO 1 -->
+      <section id="step1" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <h2>Adicionando as Dependências no pubspec.yaml</h2>
+        </div>
+        <p>
+          Para fazer requisições HTTP e guardar o token com segurança no dispositivo, abra o arquivo <code>pubspec.yaml</code> do seu projeto Flutter e adicione o pacote <code>shared_preferences</code> logo abaixo de <code>http</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">pubspec.yaml</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+  shared_preferences: ^2.2.2</code></pre>
+        </div>
+
+        <p>Após salvar o arquivo, execute no terminal integrado do VS Code:</p>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Terminal</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>flutter pub get</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 2 -->
+      <section id="step2" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <h2>Criando os Modelos de Dados (Models)</h2>
+        </div>
+        <p>
+          Vamos modelar as respostas da API para o token de acesso (retornado pelo login) e para os dados do usuário (retornado pelo cadastro e pelo perfil <code>/auth/me</code>).
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/models/auth_models.dart</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>// Resposta de sucesso do POST /auth/login
+class LoginResponse {
+  final String accessToken;
+  final String tokenType;
+
+  LoginResponse({
+    required this.accessToken,
+    required this.tokenType,
+  });
+
+  factory LoginResponse.fromJson(Map<String, dynamic> json) {
+    return LoginResponse(
+      accessToken: json['access_token'] ?? '',
+      tokenType: json['token_type'] ?? 'bearer',
+    );
+  }
+}
+
+// Dados do Usuário (POST /auth/cadastrar e GET /auth/me)
+class Usuario {
+  final int id;
+  final String username;
+  final String nome;
+
+  Usuario({
+    required this.id,
+    required this.username,
+    required this.nome,
+  });
+
+  factory Usuario.fromJson(Map<String, dynamic> json) {
+    return Usuario(
+      id: json['id'] ?? 0,
+      username: json['username'] ?? '',
+      nome: json['nome'] ?? '',
+    );
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 3 -->
+      <section id="step3" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <h2>Criando o Serviço de Autenticação (AuthService)</h2>
+        </div>
+        <p>
+          O <code>AuthService</code> é a classe responsável por fazer as chamadas de rede para a nossa API e salvar o token localmente no dispositivo.
+        </p>
+
+        <div class="callout callout-warning">
+          <div class="callout-title">⚠️ Atenção à URL Base no Flutter</div>
+          <ul>
+            <li><strong>Emulador Android (Android Studio):</strong> use <code>http://10.0.2.2:8000</code> (pois <code>localhost</code> aponta para o próprio celular).</li>
+            <li><strong>Simulador iOS ou Navegador Web:</strong> use <code>http://localhost:8000</code>.</li>
+            <li><strong>Aparelho físico conectado via Wi-Fi:</strong> use o IP local do seu computador (ex: <code>http://192.168.1.15:8000</code>).</li>
+          </ul>
+        </div>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/services/auth_service.dart</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/auth_models.dart';
+
+class AuthService {
+  // Altere para seu IP se estiver testando em aparelho físico
+  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const String tokenKey = 'jwt_token';
+
+  // 1. FAZER LOGIN (POST /auth/login)
+  Future<String> login(String username, String senha) async {
+    final url = Uri.parse('$baseUrl/auth/login');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username.trim(),
+        'senha': senha,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final dados = jsonDecode(response.body);
+      final loginResp = LoginResponse.fromJson(dados);
+
+      // Salva o token no aparelho
+      await salvarToken(loginResp.accessToken);
+      return loginResp.accessToken;
+    } else if (response.statusCode == 401) {
+      final erro = jsonDecode(response.body);
+      throw Exception(erro['detail'] ?? 'Usuário ou senha inválidos.');
+    } else {
+      throw Exception('Erro ao conectar ao servidor (${response.statusCode})');
+    }
+  }
+
+  // 2. CADASTRAR NOVO USUÁRIO (POST /auth/cadastrar)
+  Future<Usuario> cadastrar({
+    required String username,
+    required String senha,
+    required String nome,
+  }) async {
+    final url = Uri.parse('$baseUrl/auth/cadastrar');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username.trim(),
+        'senha': senha,
+        'nome': nome.trim(),
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      final dados = jsonDecode(utf8.decode(response.bodyBytes));
+      return Usuario.fromJson(dados);
+    } else if (response.statusCode == 400) {
+      final erro = jsonDecode(utf8.decode(response.bodyBytes));
+      throw Exception(erro['detail'] ?? 'Nome de usuário indisponível.');
+    } else {
+      throw Exception('Erro no cadastro (${response.statusCode})');
+    }
+  }
+
+  // 3. CONSULTAR PERFIL LOGADO (GET /auth/me com Bearer Token)
+  Future<Usuario?> obterPerfil() async {
+    final token = await obterToken();
+    if (token == null) return null;
+
+    final url = Uri.parse('$baseUrl/auth/me');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final dados = jsonDecode(utf8.decode(response.bodyBytes));
+      return Usuario.fromJson(dados);
+    }
+    return null;
+  }
+
+  // MÉTODOS DE SESSÃO LOCAL COM SHAREDPREFERENCES
+  Future<void> salvarToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(tokenKey, token);
+  }
+
+  Future<String?> obterToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(tokenKey);
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(tokenKey);
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 4 -->
+      <section id="step4" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <h2>Construindo a Tela de Login (LoginPage)</h2>
+        </div>
+        <p>
+          A tela de login deve fornecer campos intuitivos para usuário e senha, exibir um indicador de carregamento durante a requisição e mostrar um alerta amigável (via <code>SnackBar</code>) se as credenciais estiverem incorretas.
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/pages/login_page.dart</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import 'cadastro_page.dart';
+import 'produtos_page.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _usuarioCtrl = TextEditingController(text: 'aluno');
+  final _senhaCtrl = TextEditingController(text: '123456');
+  final _authService = AuthService();
+
+  bool _carregando = false;
+  bool _ocultarSenha = true;
+
+  Future<void> _fazerLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _carregando = true);
+
+    try {
+      await _authService.login(_usuarioCtrl.text, _senhaCtrl.text);
+
+      if (!mounted) return;
+      // Login com sucesso: vai para a tela de produtos
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ProdutosPage()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Ícone de Segurança
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.lock_outline, size: 36, color: Colors.white),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Acessar Catálogo',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Informe suas credenciais para continuar',
+                    style: TextStyle(color: Color(0xFF94A3B8)),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Campo Usuário
+                  TextFormField(
+                    controller: _usuarioCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Nome de Usuário',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe seu usuário' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Campo Senha
+                  TextFormField(
+                    controller: _senhaCtrl,
+                    obscureText: _ocultarSenha,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Senha',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.key_outlined, color: Color(0xFF818CF8)),
+                      suffixIcon: IconButton(
+                        icon: Icon(_ocultarSenha ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF94A3B8)),
+                        onPressed: () => setState(() => _ocultarSenha = !_ocultarSenha),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.length < 4) ? 'Mínimo de 4 caracteres' : null,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Botão Entrar
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _carregando ? null : _fazerLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _carregando
+                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                          : const Text('Entrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Link para Cadastro
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CadastroPage()),
+                      );
+                    },
+                    child: const Text.rich(
+                      TextSpan(
+                        text: 'Não tem uma conta? ',
+                        style: TextStyle(color: Color(0xFF94A3B8)),
+                        children: [
+                          TextSpan(
+                            text: 'Cadastre-se',
+                            style: TextStyle(color: Color(0xFF818CF8), fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 5 -->
+      <section id="step5" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <h2>Construindo a Tela de Cadastro (CadastroPage)</h2>
+        </div>
+        <p>
+          Agora vamos implementar a tela que consome <code>POST /auth/cadastrar</code>. O aluno informa seu nome, escolhe um username e uma senha. Ao concluir com sucesso, ele é redirecionado para a tela de login já com o username preenchido!
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/pages/cadastro_page.dart</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+
+class CadastroPage extends StatefulWidget {
+  const CadastroPage({super.key});
+
+  @override
+  State<CadastroPage> createState() => _CadastroPageState();
+}
+
+class _CadastroPageState extends State<CadastroPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _nomeCtrl = TextEditingController();
+  final _usuarioCtrl = TextEditingController();
+  final _senhaCtrl = TextEditingController();
+  final _authService = AuthService();
+
+  bool _carregando = false;
+
+  Future<void> _fazerCadastro() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _carregando = true);
+
+    try {
+      final novoUsuario = await _authService.cadastrar(
+        nome: _nomeCtrl.text,
+        username: _usuarioCtrl.text,
+        senha: _senhaCtrl.text,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Conta criada com sucesso para ${novoUsuario.nome}! Faça login.'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // Volta para a tela de Login
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
+      appBar: AppBar(
+        title: const Text('Criar Nova Conta'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  const Text(
+                    'Junte-se a nós!',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Preencha seus dados para criar sua conta',
+                    style: TextStyle(color: Color(0xFF94A3B8)),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Nome Completo
+                  TextFormField(
+                    controller: _nomeCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Nome Completo',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe seu nome' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Username
+                  TextFormField(
+                    controller: _usuarioCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Nome de Usuário (login)',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.alternate_email, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe o nome de usuário' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Senha
+                  TextFormField(
+                    controller: _senhaCtrl,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Senha de Acesso',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.length < 4) ? 'A senha deve ter no mínimo 4 caracteres' : null,
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Botão Cadastrar
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _carregando ? null : _fazerCadastro,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _carregando
+                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                          : const Text('Concluir Cadastro', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 6 -->
+      <section id="step6" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">6</div>
+          <h2>Conectando a Sessão, Perfil e Botão de Logout</h2>
+        </div>
+        <p>
+          Agora integramos a autenticação com a tela de catálogo de produtos que os alunos já construíram na Atividade 1:
+        </p>
+
+        <ol>
+          <li><strong>Verificação Automática no Início (Splash/AuthCheck):</strong> Se já existir um token salvo no dispositivo, o app abre direto nos produtos. Caso contrário, abre o Login.</li>
+          <li><strong>Exibir Perfil do Usuário:</strong> Usando o endpoint protegido <code>GET /auth/me</code> com o cabeçalho <code>Authorization: Bearer &lt;token&gt;</code>, exibimos uma saudação com o nome do aluno.</li>
+          <li><strong>Botão de Logout:</strong> Na <code>AppBar</code> da lista de produtos, adicionamos um botão para limpar a chave do token e voltar à tela de login.</li>
+        </ol>
+
+        <div class="callout callout-tip">
+          <div class="callout-title">💡 Como o Logout funciona com JWT?</div>
+          <p>
+            Como os tokens JWT são <em>stateless</em> (não guardam estado no servidor), o logout no cliente é extremamente simples e eficiente: basta <strong>remover o token do SharedPreferences</strong> e redirecionar para a <code>LoginPage</code>!
+          </p>
+        </div>
+      </section>
+
+      <!-- PASSO 7 -->
+      <section id="step7" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">7</div>
+          <h2>Código Completo Unificado (main.dart)</h2>
+        </div>
+        <p>
+          Abaixo está o arquivo <code>main.dart</code> completo, pronto para ser colado no seu projeto Flutter. Ele reúne autenticação, splash inicial, login, cadastro e a lista de produtos com logout:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/main.dart (Código Completo)</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+// =====================================================================
+// 1. CONFIGURAÇÃO DE REDE DA API
+// =====================================================================
+// Emulador Android: http://10.0.2.2:8000
+// Simulador iOS / Web: http://localhost:8000
+// Aparelho Físico (Wi-Fi): http://SEU_IP_AQUI:8000
+const String apiBaseUrl = 'http://10.0.2.2:8000';
+const String tokenKey = 'jwt_token';
+
+void main() {
+  runApp(const MeuApp());
+}
+
+class MeuApp extends StatelessWidget {
+  const MeuApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'App com Autenticação JWT',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF6366F1),
+          surface: Color(0xFF1E293B),
+        ),
+      ),
+      home: const VerificadorSessao(),
+    );
+  }
+}
+
+// =====================================================================
+// 2. VERIFICADOR INICIAL DE SESSÃO (SPLASH)
+// =====================================================================
+class VerificadorSessao extends StatefulWidget {
+  const VerificadorSessao({super.key});
+
+  @override
+  State<VerificadorSessao> createState() => _VerificadorSessaoState();
+}
+
+class _VerificadorSessaoState extends State<VerificadorSessao> {
+  @override
+  void initState() {
+    super.initState();
+    _checarToken();
+  }
+
+  Future<void> _checarToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(tokenKey);
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    if (token != null && token.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ProdutosPage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// 3. TELA DE LOGIN
+// =====================================================================
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _usuarioCtrl = TextEditingController(text: 'aluno');
+  final _senhaCtrl = TextEditingController(text: '123456');
+  bool _carregando = false;
+  bool _ocultarSenha = true;
+
+  Future<void> _fazerLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _carregando = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': _usuarioCtrl.text.trim(),
+          'senha': _senhaCtrl.text,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final dados = jsonDecode(response.body);
+        final token = dados['access_token'];
+
+        // Salva o token no aparelho
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(tokenKey, token);
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProdutosPage()),
+        );
+      } else {
+        final erro = jsonDecode(response.body);
+        throw Exception(erro['detail'] ?? 'Falha ao autenticar.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.lock_outline, size: 34, color: Colors.white),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Entrar no App',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Autenticação segura via JSON Web Tokens',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                  ),
+                  const SizedBox(height: 28),
+
+                  TextFormField(
+                    controller: _usuarioCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Usuário',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe seu usuário' : null,
+                  ),
+                  const SizedBox(height: 14),
+
+                  TextFormField(
+                    controller: _senhaCtrl,
+                    obscureText: _ocultarSenha,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Senha',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.key_outlined, color: Color(0xFF818CF8)),
+                      suffixIcon: IconButton(
+                        icon: Icon(_ocultarSenha ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF94A3B8)),
+                        onPressed: () => setState(() => _ocultarSenha = !_ocultarSenha),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.length < 4) ? 'Senha mínima de 4 caracteres' : null,
+                  ),
+                  const SizedBox(height: 22),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _carregando ? null : _fazerLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _carregando
+                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                          : const Text('Entrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CadastroPage()),
+                      );
+                    },
+                    child: const Text(
+                      'Não tem conta? Cadastre-se aqui',
+                      style: TextStyle(color: Color(0xFF818CF8), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// 4. TELA DE CADASTRO
+// =====================================================================
+class CadastroPage extends StatefulWidget {
+  const CadastroPage({super.key});
+
+  @override
+  State<CadastroPage> createState() => _CadastroPageState();
+}
+
+class _CadastroPageState extends State<CadastroPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _nomeCtrl = TextEditingController();
+  final _usuarioCtrl = TextEditingController();
+  final _senhaCtrl = TextEditingController();
+  bool _carregando = false;
+
+  Future<void> _fazerCadastro() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _carregando = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/auth/cadastrar'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'nome': _nomeCtrl.text.trim(),
+          'username': _usuarioCtrl.text.trim(),
+          'senha': _senhaCtrl.text,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Usuário cadastrado com sucesso! Faça login.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        final erro = jsonDecode(utf8.decode(response.bodyBytes));
+        throw Exception(erro['detail'] ?? 'Erro no cadastro.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Cadastrar Conta'), backgroundColor: Colors.transparent, elevation: 0),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nomeCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Nome Completo',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe seu nome' : null,
+                  ),
+                  const SizedBox(height: 14),
+
+                  TextFormField(
+                    controller: _usuarioCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Usuário (Login)',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.alternate_email, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe seu usuário' : null,
+                  ),
+                  const SizedBox(height: 14),
+
+                  TextFormField(
+                    controller: _senhaCtrl,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Senha (mínimo 4 caracteres)',
+                      labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF818CF8)),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => (v == null || v.length < 4) ? 'Senha muito curta' : null,
+                  ),
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _carregando ? null : _fazerCadastro,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _carregando
+                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                          : const Text('Cadastrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// 5. TELA DE PRODUTOS AUTENTICADA (COM GET /auth/me & LOGOUT)
+// =====================================================================
+class ProdutosPage extends StatefulWidget {
+  const ProdutosPage({super.key});
+
+  @override
+  State<ProdutosPage> createState() => _ProdutosPageState();
+}
+
+class _ProdutosPageState extends State<ProdutosPage> {
+  String _nomeUsuario = 'Carregando...';
+  List<dynamic> _produtos = [];
+  bool _carregando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarDados();
+  }
+
+  Future<void> _carregarDados() async {
+    setState(() => _carregando = true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(tokenKey) ?? '';
+
+    try {
+      // 1. Busca perfil do usuário autenticado no /auth/me
+      final respUser = await http.get(
+        Uri.parse('$apiBaseUrl/auth/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (respUser.statusCode == 200) {
+        final dadosUser = jsonDecode(utf8.decode(respUser.bodyBytes));
+        setState(() => _nomeUsuario = dadosUser['nome'] ?? dadosUser['username']);
+      }
+
+      // 2. Busca lista de produtos
+      final respProd = await http.get(Uri.parse('$apiBaseUrl/produtos'));
+      if (respProd.statusCode == 200) {
+        setState(() => _produtos = jsonDecode(utf8.decode(respProd.bodyBytes)));
+      }
+    } catch (_) {
+      // Trata erros de rede se necessário
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  Future<void> _fazerLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(tokenKey); // Remove o token local
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Catálogo de Produtos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Olá, $_nomeUsuario 👋', style: const TextStyle(fontSize: 12, color: Color(0xFF818CF8))),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            tooltip: 'Sair da Conta',
+            onPressed: _fazerLogout,
+          ),
+        ],
+      ),
+      body: _carregando
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _produtos.length,
+              itemBuilder: (context, index) {
+                final prod = _produtos[index];
+                return Card(
+                  color: const Color(0xFF1E293B),
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: const Color(0xFF6366F1).withOpacity(0.2),
+                      child: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF818CF8)),
+                    ),
+                    title: Text(prod['nome'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    subtitle: Text(
+                      prod['descricao'] ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Color(0xFF94A3B8)),
+                    ),
+                    trailing: Text(
+                      'R\$ ${(prod['preco'] as num).toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF34D399), fontSize: 14),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 8 -->
+      <section id="step8" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">8</div>
+          <h2>Como Testar e Credenciais de Acesso</h2>
+        </div>
+        <p>
+          O servidor já vem configurado com usuários de teste na base de dados para você testar imediatamente:
+        </p>
+
+        <div class="cred-grid">
+          <div class="cred-card">
+            <div class="cred-card-header">
+              <strong>Aluno Padrão</strong>
+              <span class="cred-badge aluno">Teste Rápido</span>
+            </div>
+            <p style="margin: 0; font-size: 0.85rem;">Usuário: <code>aluno</code></p>
+            <p style="margin: 0; font-size: 0.85rem;">Senha: <code>123456</code></p>
+          </div>
+
+          <div class="cred-card">
+            <div class="cred-card-header">
+              <strong>Administrador</strong>
+              <span class="cred-badge admin">Admin</span>
+            </div>
+            <p style="margin: 0; font-size: 0.85rem;">Usuário: <code>admin</code></p>
+            <p style="margin: 0; font-size: 0.85rem;">Senha: <code>admin123</code></p>
+          </div>
+        </div>
+
+        <h3>Roteiro de Validação Prática:</h3>
+        <ol>
+          <li>Inicie o app com o servidor da API rodando.</li>
+          <li>Digite <code>aluno</code> e <code>123456</code> e clique em <strong>Entrar</strong>. Observe a transição imediata para a tela de produtos!</li>
+          <li>Repare na AppBar superior: ela exibirá <em>"Olá, Aluno Exemplo 👋"</em>, comprovando que o token Bearer JWT foi enviado com sucesso para <code>/auth/me</code>.</li>
+          <li>Feche totalmente o aplicativo no emulador e abra novamente: o app entrará direto na lista de produtos, comprovando a persistência com <code>SharedPreferences</code>!</li>
+          <li>Clique no ícone de logout (porta vermelha) no canto superior direito: a sessão é encerrada e a tela de login ressurge.</li>
+          <li>Clique em <strong>Cadastre-se</strong>, crie um novo usuário com o seu nome e faça o login com ele!</li>
+        </ol>
+      </section>
+
+      <footer class="tutorial-footer">
+        <p>Atividade Prática de Autenticação JWT &bull; <strong>Desenvolvimento Mobile</strong></p>
+      </footer>
+    </main>
+  </div>
+
+  <button class="back-to-top" id="backToTop" title="Voltar ao topo">↑</button>
+
+  <script>
+    window.addEventListener('scroll', () => {
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('progress-bar').style.width = scrolled + '%';
+
+      const backBtn = document.getElementById('backToTop');
+      if (winScroll > 400) {
+        backBtn.classList.add('visible');
+      } else {
+        backBtn.classList.remove('visible');
+      }
+    });
+
+    document.getElementById('backToTop').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function copyCode(button) {
+      const codeElement = button.closest('.code-container').querySelector('pre code');
+      navigator.clipboard.writeText(codeElement.innerText).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copiado!';
+        button.classList.add('copied');
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    const sections = document.querySelectorAll('.tutorial-step, header');
+    const navLinks = document.querySelectorAll('.toc-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -110,6 +110,9 @@ Ao programar o app mobile, **não use `localhost` na URL base** (exceto no simul
 | Método | Rota | Descrição |
 | :--- | :--- | :--- |
 | `GET` | `/` | Boas-vindas e resumo dos endpoints disponíveis |
+| `GET` | `/tutorial` | Tutorial interativo Flutter: Consumo de API REST (Catálogo de Produtos) |
+| `GET` | `/tutorial-notificacoes` | Tutorial interativo Flutter: Notificações Push em Tempo Real (WebSockets) |
+| `GET` | `/tutorial-login` | Tutorial interativo Flutter: Autenticação JWT, Telas de Login e Cadastro |
 | `GET, POST` | `/teste-formulario` | Rota didática para a turma de Web 1 testar envio de formulários HTML (GET ou POST) |
 | `POST` | `/auth/cadastrar` | Cadastra um novo usuário com senha criptografada via BCrypt |
 | `POST` | `/auth/login` | Login com envio de JSON (ideal para apps Mobile Flutter/React Native/Android/iOS) |
@@ -271,6 +274,10 @@ exemplo/
 ├── produtos.json       # Base de dados de produtos em formato JSON
 ├── usuarios.json       # Base de dados de usuários em formato JSON (senhas em hash bcrypt)
 ├── formulario.py       # Módulo para suporte a testes práticos de formulários Web 1
+├── static/             # Tutoriais interativos em HTML (Mobile & Web)
+│   ├── tutorial.html               # Atividade 1: Consumo de API REST (Produtos)
+│   ├── tutorial_notificacoes.html  # Atividade 2: Notificações Push (WebSockets)
+│   └── tutorial_auth.html          # Atividade 3: Autenticação JWT, Login & Cadastro
 ├── requirements.txt    # Dependências do projeto (FastAPI, PyJWT, bcrypt, python-multipart, etc.)
 ├── build.bat           # Script de geração do .exe para Windows
 ├── build.sh            # Script de geração de executável para Linux/macOS
