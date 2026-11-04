@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial Flutter: Requisições Autenticadas com Token JWT (Bearer Token)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #e0e7ff;
+      --accent: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #0b1120;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6, #10b981);
+      z-index: 1000;
+      width: 0%;
+      transition: width 0.1s ease;
+    }
+
+    .layout-wrapper {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar {
+      width: 330px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      padding: 2.5rem 1.5rem;
+      border-right: 1px solid var(--border);
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #10b981, #6366f1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: #34d399;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-left: 0.5rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toc-link {
+      display: block;
+      padding: 0.6rem 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border-left: 2px solid transparent;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      color: #a5b4fc;
+      background-color: rgba(99, 102, 241, 0.12);
+      border-left-color: #6366f1;
+      padding-left: 1rem;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 3rem 4rem 6rem;
+      max-width: 980px;
+      min-width: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #6ee7b7;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    h1 {
+      font-size: 2.65rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lead-text {
+      font-size: 1.15rem;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    .tutorial-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+      padding: 1.25rem;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .meta-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .tutorial-step {
+      margin-bottom: 4rem;
+      padding-top: 1.5rem;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 1.25rem;
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      background-color: #6366f1;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    h2 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin: 1.75rem 0 0.75rem;
+    }
+
+    p {
+      color: #94a3b8;
+      margin-bottom: 1.25rem;
+    }
+
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.25rem;
+      color: #94a3b8;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    strong {
+      color: #f8fafc;
+    }
+
+    code:not(pre code) {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875em;
+      padding: 0.2em 0.45em;
+      border-radius: 6px;
+      background-color: rgba(99, 102, 241, 0.15);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    /* Caixa de Código */
+    .code-container {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 1.5rem 0 2rem;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .code-header {
+      background-color: #162032;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-filename {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-filename::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #6366f1;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+
+    .copy-btn.copied {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+
+    pre {
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+
+    pre code {
+      color: #e2e8f0;
+    }
+
+    /* Realce de Sintaxe */
+    .tok-kw { color: #f472b6; font-weight: 600; }
+    .tok-type { color: #60a5fa; }
+    .tok-str { color: #a3e635; }
+    .tok-comm { color: #64748b; font-style: italic; }
+    .tok-fn { color: #38bdf8; }
+    .tok-prop { color: #fbbf24; }
+    .tok-num { color: #f87171; }
+    .tok-diff-del { color: #f87171; background-color: rgba(239, 68, 68, 0.15); display: block; padding: 0 4px; }
+    .tok-diff-add { color: #4ade80; background-color: rgba(34, 197, 94, 0.15); display: block; padding: 0 4px; font-weight: 600; }
+
+    /* Callout */
+    .callout {
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius);
+      margin: 1.5rem 0;
+      display: flex;
+      gap: 16px;
+      border-left: 4px solid;
+    }
+
+    .callout-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .callout-content p {
+      margin-bottom: 0;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+    }
+
+    .callout-tip {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: #10b981;
+    }
+    .callout-tip .callout-content strong { color: #34d399; }
+
+    .callout-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: #f59e0b;
+    }
+    .callout-warning .callout-content strong { color: #fbbf24; }
+
+    .callout-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #ef4444;
+    }
+    .callout-danger .callout-content strong { color: #f87171; }
+
+    .callout-info {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: #6366f1;
+    }
+    .callout-info .callout-content strong { color: #a5b4fc; }
+
+    /* Comparador Lado a Lado (Cards) */
+    .diff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .diff-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .diff-card.before {
+      border-top: 4px solid var(--accent-red);
+    }
+
+    .diff-card.after {
+      border-top: 4px solid var(--accent-green);
+    }
+
+    .diff-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .diff-card.before .diff-card-title { color: #f87171; }
+    .diff-card.after .diff-card-title { color: #4ade80; }
+
+    /* Tabela de Endpoints */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #162032;
+      color: #a5b4fc;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge-method {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .method-get { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .method-post { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .method-put { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .method-delete { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-locked {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-unlocked {
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    #backToTop {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #6366f1;
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+
+    #backToTop.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    @media (max-width: 992px) {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        padding: 2rem 1.5rem;
+      }
+      h1 {
+        font-size: 2.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="progress-bar"></div>
+
+  <div class="layout-wrapper">
+    <!-- SIDEBAR / SUMÁRIO -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🔑</div>
+        <div>
+          <div class="brand-title">Dev Mobile & Web</div>
+          <div class="brand-subtitle">Guia de Assinatura JWT</div>
+        </div>
+      </div>
+
+      <div class="toc-title">Neste Tutorial</div>
+      <ul class="toc-list">
+        <li><a href="#intro" class="toc-link active">1. O que Mudou na API?</a></li>
+        <li><a href="#header" class="toc-link">2. O Cabeçalho Authorization</a></li>
+        <li><a href="#token" class="toc-link">3. Lendo o Token com SharedPreferences</a></li>
+        <li><a href="#comparativo" class="toc-link">4. Comparativo Antes vs Depois</a></li>
+        <li><a href="#crud" class="toc-link">5. Atualizando o CRUD Completo</a></li>
+        <li><a href="#expiracao" class="toc-link">6. Tratando o Erro 401 (Logout)</a></li>
+        <li><a href="#service" class="toc-link">7. Serviço Centralizado (ApiService)</a></li>
+        <li><a href="#testes" class="toc-link">8. Como Validar no Swagger e cURL</a></li>
+      </ul>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="main-content">
+      <header>
+        <div class="hero-badge">
+          <span class="dot"></span>
+          <span>Guia Prático • Requisições com Bearer Token</span>
+        </div>
+        <h1>Como Assinar Requisições HTTP com Token JWT no Flutter</h1>
+        <p class="lead-text">
+          Aprenda a atualizar o código do seu aplicativo Flutter construído na Atividade 1 para incluir o token de autenticação JWT obtido no Login (Atividade 3) e consumir os endpoints protegidos da API sem receber o erro <code>401 Unauthorized</code>.
+        </p>
+
+        <div class="tutorial-meta">
+          <div class="meta-item">
+            <span class="meta-label">Público-Alvo</span>
+            <span class="meta-val">Estudantes de Mobile / Web</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Cabeçalho HTTP</span>
+            <span class="meta-val"><code>Authorization: Bearer &lt;token&gt;</code></span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Pacote Flutter</span>
+            <span class="meta-val"><code>http: ^1.2.0</code></span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Persistência Local</span>
+            <span class="meta-val"><code>shared_preferences</code></span>
+          </div>
+        </div>
+      </header>
+
+      <!-- PASSO 1 -->
+      <section id="intro" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <h2>O que Mudou na API? (Por que recebo erro 401?)</h2>
+        </div>
+        <p>
+          Nas primeiras atividades, os endpoints de produtos eram <strong>abertos</strong> para permitir que vocês testassem requisições REST sem preocupação com login.
+        </p>
+        <p>
+          Agora, a API foi atualizada para o padrão corporativo de microsserviços: <strong>todos os endpoints de produtos exigem que a requisição seja assinada digitalmente com um Token JWT válido</strong>.
+        </p>
+
+        <div class="callout callout-danger">
+          <div class="callout-icon">🚨</div>
+          <div class="callout-content">
+            <strong>O que acontece se enviar sem token agora:</strong><br>
+            A API recusará a conexão imediatamente com status <code>HTTP 401 Unauthorized</code>:
+            <pre style="margin-top: 8px; padding: 10px; background: #111827; border-radius: 6px;"><code>{
+  "detail": "Not authenticated"
+}</code></pre>
+          </div>
+        </div>
+
+        <h3>Quais rotas agora exigem token?</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Método</th>
+                <th>Endpoint</th>
+                <th>Status de Acesso</th>
+                <th>Observação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-method method-get">GET</span></td>
+                <td><code>/produtos</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Listagem de catálogo</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-get">GET</span></td>
+                <td><code>/produtos/{id}</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Detalhes de um produto</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-post">POST</span></td>
+                <td><code>/produtos</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Cadastro de produto</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-put">PUT</span></td>
+                <td><code>/produtos/{id}</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Edição de produto</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-delete">DELETE</span></td>
+                <td><code>/produtos/{id}</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Exclusão de produto</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-post">POST</span></td>
+                <td><code>/notificacoes/enviar</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Disparo push geral</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-get">GET</span></td>
+                <td><code>/auth/me</code></td>
+                <td><span class="badge-status status-locked">🔒 Requer Token</span></td>
+                <td>Dados do usuário logado</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-post">POST</span></td>
+                <td><code>/auth/login</code></td>
+                <td><span class="badge-status status-unlocked">🔓 Público</span></td>
+                <td>Gera o token para o app</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-post">POST</span></td>
+                <td><code>/auth/cadastrar</code></td>
+                <td><span class="badge-status status-unlocked">🔓 Público</span></td>
+                <td>Cria novas contas</td>
+              </tr>
+              <tr>
+                <td><span class="badge-method method-get">GET</span></td>
+                <td><code>/tutorial*</code> e <code>/teste-formulario</code></td>
+                <td><span class="badge-status status-unlocked">🔓 Público</span></td>
+                <td>Tutoriais HTML didáticos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PASSO 2 -->
+      <section id="header" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <h2>Como o Token JWT Viaja no Cabeçalho HTTP</h2>
+        </div>
+        <p>
+          O padrão da indústria para envio de tokens JWT é o <strong>Bearer Token</strong> (RFC 6750). O token viaja em um cabeçalho HTTP padrão chamado <code>Authorization</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Estrutura do Cabeçalho HTTP</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+        </div>
+
+        <p>
+          Observe a palavra <code>Bearer</code> (com a primeira letra maiúscula) seguida de <strong>um espaço obrigatório</strong> e depois a sequência criptográfica do seu token.
+        </p>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong>O que significa "Bearer"?</strong><br>
+            Em inglês, <em>Bearer</em> significa "portador". Ou seja: o servidor autoriza qualquer requisição de quem estiver "portando" aquele token assinado pela chave secreta do servidor.
+          </div>
+        </div>
+      </section>
+
+      <!-- PASSO 3 -->
+      <section id="token" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <h2>Lendo o Token Salvo com SharedPreferences</h2>
+        </div>
+        <p>
+          Na <strong>Atividade 3 (Login & Cadastro)</strong>, quando o usuário fez login com sucesso em <code>/auth/login</code>, vocês salvaram a string <code>access_token</code> no dispositivo com <code>SharedPreferences</code>.
+        </p>
+        <p>
+          Para usá-lo antes de disparar qualquer requisição para a lista de produtos, basta recuperá-lo:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Recuperando o Token Salvo</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar Código</button>
+          </div>
+          <pre><code><span class="tok-kw">import</span> <span class="tok-str">'package:shared_preferences/shared_preferences.dart'</span>;
+
+<span class="tok-type">Future</span>&lt;<span class="tok-type">String</span>?&gt; <span class="tok-fn">obterTokenSalvo</span>() <span class="tok-kw">async</span> {
+  <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+  <span class="tok-comment">// Lê a mesma chave onde você salvou no login ('jwt_token' ou 'token')</span>
+  <span class="tok-kw">return</span> prefs.<span class="tok-fn">getString</span>(<span class="tok-str">'jwt_token'</span>);
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 4 -->
+      <section id="comparativo" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">4</div>
+          <h2>Comparativo Prático: Como Atualizar (Antes vs Depois)</h2>
+        </div>
+        <p>
+          Veja a diferença exata entre como o seu app fazia a requisição na Atividade 1 e como ele deve fazer agora:
+        </p>
+
+        <div class="diff-grid">
+          <div class="diff-card before">
+            <div class="diff-card-title">❌ Antes (Atividade 1 - Sem Token)</div>
+            <p style="font-size: 0.85rem; margin-bottom: 8px;">
+              A requisição não informava credenciais. Agora o servidor rejeita com <strong>401 Unauthorized</strong>.
+            </p>
+            <div class="code-container" style="margin: 0;">
+              <pre><code><span class="tok-comment">// Sem cabeçalhos de autorização</span>
+<span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">get</span>(
+  <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'http://10.0.2.2:8000/produtos'</span>),
+);</code></pre>
+            </div>
+          </div>
+
+          <div class="diff-card after">
+            <div class="diff-card-title">✅ Depois (Com Token Bearer)</div>
+            <p style="font-size: 0.85rem; margin-bottom: 8px;">
+              Adiciona o parâmetro <code>headers: {'Authorization': 'Bearer $token'}</code>. Acesso liberado!
+            </p>
+            <div class="code-container" style="margin: 0;">
+              <pre><code><span class="tok-comment">// 1. Obtém o token salvo</span>
+<span class="tok-kw">final</span> token = <span class="tok-kw">await</span> <span class="tok-fn">obterTokenSalvo</span>();
+
+<span class="tok-comment">// 2. Envia no cabeçalho Authorization</span>
+<span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">get</span>(
+  <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'http://10.0.2.2:8000/produtos'</span>),
+  headers: {
+    <span class="tok-str">'Content-Type'</span>: <span class="tok-str">'application/json'</span>,
+    <span class="tok-str">'Authorization'</span>: <span class="tok-str">'Bearer $token'</span>,
+  },
+);</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASSO 5 -->
+      <section id="crud" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">5</div>
+          <h2>Atualizando Todas as Operações CRUD</h2>
+        </div>
+        <p>
+          Abaixo estão os exemplos práticos em Dart para você copiar e colar diretamente nas funções do seu app Flutter:
+        </p>
+
+        <h3>1. Listar Produtos (GET /produtos)</h3>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">_buscarProdutos() com Token</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="tok-type">Future</span>&lt;<span class="tok-type">List</span>&lt;<span class="tok-type">Produto</span>&gt;&gt; <span class="tok-fn">buscarProdutosAutenticado</span>() <span class="tok-kw">async</span> {
+  <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+  <span class="tok-kw">final</span> token = prefs.<span class="tok-fn">getString</span>(<span class="tok-str">'jwt_token'</span>) ?? <span class="tok-str">''</span>;
+
+  <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">get</span>(
+    <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$apiBaseUrl/produtos'</span>),
+    headers: {
+      <span class="tok-str">'Content-Type'</span>: <span class="tok-str">'application/json'</span>,
+      <span class="tok-str">'Authorization'</span>: <span class="tok-str">'Bearer $token'</span>,
+    },
+  );
+
+  <span class="tok-kw">if</span> (response.statusCode == <span class="tok-num">200</span>) {
+    <span class="tok-kw">final</span> <span class="tok-type">List</span>&lt;<span class="tok-kw">dynamic</span>&gt; listaJson = jsonDecode(utf8.decode(response.bodyBytes));
+    <span class="tok-kw">return</span> listaJson.<span class="tok-fn">map</span>((item) =&gt; <span class="tok-type">Produto</span>.<span class="tok-fn">fromJson</span>(item)).<span class="tok-fn">toList</span>();
+  } <span class="tok-kw">else if</span> (response.statusCode == <span class="tok-num">401</span>) {
+    <span class="tok-kw">throw</span> <span class="tok-type">Exception</span>(<span class="tok-str">'Sessão expirada. Faça login novamente!'</span>);
+  } <span class="tok-kw">else</span> {
+    <span class="tok-kw">throw</span> <span class="tok-type">Exception</span>(<span class="tok-str">'Erro ao carregar produtos: ${response.statusCode}'</span>);
+  }
+}</code></pre>
+        </div>
+
+        <h3>2. Cadastrar Novo Produto (POST /produtos)</h3>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">_cadastrarProduto() com Token e Body JSON</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="tok-type">Future</span>&lt;<span class="tok-type">bool</span>&gt; <span class="tok-fn">cadastrarProdutoAutenticado</span>(<span class="tok-type">String</span> nome, <span class="tok-type">double</span> preco, <span class="tok-type">String</span> descricao) <span class="tok-kw">async</span> {
+  <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+  <span class="tok-kw">final</span> token = prefs.<span class="tok-fn">getString</span>(<span class="tok-str">'jwt_token'</span>) ?? <span class="tok-str">''</span>;
+
+  <span class="tok-kw">final</span> payload = jsonEncode({
+    <span class="tok-str">'nome'</span>: nome,
+    <span class="tok-str">'preco'</span>: preco,
+    <span class="tok-str">'descricao'</span>: descricao,
+    <span class="tok-str">'disponivel'</span>: <span class="tok-kw">true</span>,
+  });
+
+  <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">post</span>(
+    <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$apiBaseUrl/produtos'</span>),
+    headers: {
+      <span class="tok-str">'Content-Type'</span>: <span class="tok-str">'application/json'</span>,
+      <span class="tok-str">'Authorization'</span>: <span class="tok-str">'Bearer $token'</span>, <span class="tok-comment">// <-- TOKEN BEARER AQUI</span>
+    },
+    body: payload,
+  );
+
+  <span class="tok-kw">return</span> response.statusCode == <span class="tok-num">201</span>;
+}</code></pre>
+        </div>
+
+        <h3>3. Atualizar Produto (PUT /produtos/{id})</h3>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">_atualizarProduto() com Token</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="tok-type">Future</span>&lt;<span class="tok-type">bool</span>&gt; <span class="tok-fn">atualizarProdutoAutenticado</span>(<span class="tok-type">int</span> id, <span class="tok-type">double</span> novoPreco, <span class="tok-type">bool</span> disponivel) <span class="tok-kw">async</span> {
+  <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+  <span class="tok-kw">final</span> token = prefs.<span class="tok-fn">getString</span>(<span class="tok-str">'jwt_token'</span>) ?? <span class="tok-str">''</span>;
+
+  <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">put</span>(
+    <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$apiBaseUrl/produtos/$id'</span>),
+    headers: {
+      <span class="tok-str">'Content-Type'</span>: <span class="tok-str">'application/json'</span>,
+      <span class="tok-str">'Authorization'</span>: <span class="tok-str">'Bearer $token'</span>,
+    },
+    body: jsonEncode({
+      <span class="tok-str">'preco'</span>: novoPreco,
+      <span class="tok-str">'disponivel'</span>: disponivel,
+    }),
+  );
+
+  <span class="tok-kw">return</span> response.statusCode == <span class="tok-num">200</span>;
+}</code></pre>
+        </div>
+
+        <h3>4. Remover Produto (DELETE /produtos/{id})</h3>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">_removerProduto() com Token</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="tok-type">Future</span>&lt;<span class="tok-type">bool</span>&gt; <span class="tok-fn">removerProdutoAutenticado</span>(<span class="tok-type">int</span> id) <span class="tok-kw">async</span> {
+  <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+  <span class="tok-kw">final</span> token = prefs.<span class="tok-fn">getString</span>(<span class="tok-str">'jwt_token'</span>) ?? <span class="tok-str">''</span>;
+
+  <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">delete</span>(
+    <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$apiBaseUrl/produtos/$id'</span>),
+    headers: {
+      <span class="tok-str">'Authorization'</span>: <span class="tok-str">'Bearer $token'</span>,
+    },
+  );
+
+  <span class="tok-kw">return</span> response.statusCode == <span class="tok-num">200</span>;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 6 -->
+      <section id="expiracao" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">6</div>
+          <h2>Tratando o Erro 401 e Redirecionando para o Login</h2>
+        </div>
+        <p>
+          Tokens JWT possuem tempo de expiração. Se o aluno ficar muito tempo sem usar o app ou se o token for invalidado, qualquer chamada aos produtos retornará <code>401 Unauthorized</code>.
+        </p>
+        <p>
+          A melhor prática de UX é detectar o código 401, limpar o token salvo e mandar o usuário de volta para a tela de login:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">Tratamento de 401 e Logout Automático</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code><span class="tok-type">void</span> <span class="tok-fn">tratarErroAutenticacao</span>(<span class="tok-type">BuildContext</span> context) <span class="tok-kw">async</span> {
+  <span class="tok-comment">// 1. Limpa o token expirado do aparelho</span>
+  <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+  <span class="tok-kw">await</span> prefs.<span class="tok-fn">remove</span>(<span class="tok-str">'jwt_token'</span>);
+
+  <span class="tok-kw">if</span> (!context.mounted) <span class="tok-kw">return</span>;
+
+  <span class="tok-comment">// 2. Exibe aviso amigável ao usuário</span>
+  <span class="tok-type">ScaffoldMessenger</span>.<span class="tok-fn">of</span>(context).<span class="tok-fn">showSnackBar</span>(
+    <span class="tok-kw">const</span> <span class="tok-type">SnackBar</span>(
+      content: <span class="tok-type">Text</span>(<span class="tok-str">'Sua sessão expirou. Por favor, entre novamente.'</span>),
+      backgroundColor: <span class="tok-type">Colors</span>.orange,
+    ),
+  );
+
+  <span class="tok-comment">// 3. Redireciona para a tela de Login removendo a pilha de telas</span>
+  <span class="tok-type">Navigator</span>.<span class="tok-fn">pushAndRemoveUntil</span>(
+    context,
+    <span class="tok-type">MaterialPageRoute</span>(builder: (context) =&gt; <span class="tok-kw">const</span> <span class="tok-type">LoginPage</span>()),
+    (route) =&gt; <span class="tok-kw">false</span>,
+  );
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 7 -->
+      <section id="service" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">7</div>
+          <h2>Boas Práticas: Criando um Serviço HTTP Centralizado (ApiService)</h2>
+        </div>
+        <p>
+          Para não precisar repetir <code>SharedPreferences.getInstance()</code> e o cabeçalho <code>headers: {'Authorization': ...}</code> em cada função do seu app, crie uma classe de serviço limpa chamada <code>ApiService</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">lib/services/api_service.dart</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar Código Completo</button>
+          </div>
+          <pre><code><span class="tok-kw">import</span> <span class="tok-str">'dart:convert'</span>;
+<span class="tok-kw">import</span> <span class="tok-str">'package:http/http.dart'</span> <span class="tok-kw">as</span> http;
+<span class="tok-kw">import</span> <span class="tok-str">'package:shared_preferences/shared_preferences.dart'</span>;
+<span class="tok-kw">import</span> <span class="tok-str">'../models/produto.dart'</span>;
+
+<span class="tok-kw">class</span> <span class="tok-type">ApiService</span> {
+  <span class="tok-comment">// Use http://10.0.2.2:8000 para Android ou https://sua-api.onrender.com</span>
+  <span class="tok-kw">final</span> <span class="tok-type">String</span> baseUrl;
+
+  <span class="tok-type">ApiService</span>({<span class="tok-kw">this</span>.baseUrl = <span class="tok-str">'http://10.0.2.2:8000'</span>});
+
+  <span class="tok-comment">/// Gera os cabeçalhos padrão já incluindo o Token Bearer JWT salvo</span>
+  <span class="tok-type">Future</span>&lt;<span class="tok-type">Map</span>&lt;<span class="tok-type">String</span>, <span class="tok-type">String</span>&gt;&gt; <span class="tok-fn">_getHeaders</span>() <span class="tok-kw">async</span> {
+    <span class="tok-kw">final</span> prefs = <span class="tok-kw">await</span> <span class="tok-type">SharedPreferences</span>.<span class="tok-fn">getInstance</span>();
+    <span class="tok-kw">final</span> token = prefs.<span class="tok-fn">getString</span>(<span class="tok-str">'jwt_token'</span>) ?? <span class="tok-str">''</span>;
+
+    <span class="tok-kw">return</span> {
+      <span class="tok-str">'Content-Type'</span>: <span class="tok-str">'application/json'</span>,
+      <span class="tok-str">'Authorization'</span>: <span class="tok-str">'Bearer $token'</span>,
+    };
+  }
+
+  <span class="tok-comment">/// GET /produtos</span>
+  <span class="tok-type">Future</span>&lt;<span class="tok-type">List</span>&lt;<span class="tok-type">Produto</span>&gt;&gt; <span class="tok-fn">listarProdutos</span>() <span class="tok-kw">async</span> {
+    <span class="tok-kw">final</span> headers = <span class="tok-kw">await</span> <span class="tok-fn">_getHeaders</span>();
+    <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">get</span>(<span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$baseUrl/produtos'</span>), headers: headers);
+
+    <span class="tok-kw">if</span> (response.statusCode == <span class="tok-num">200</span>) {
+      <span class="tok-kw">final</span> <span class="tok-type">List</span>&lt;<span class="tok-kw">dynamic</span>&gt; dados = jsonDecode(utf8.decode(response.bodyBytes));
+      <span class="tok-kw">return</span> dados.<span class="tok-fn">map</span>((p) =&gt; <span class="tok-type">Produto</span>.<span class="tok-fn">fromJson</span>(p)).<span class="tok-fn">toList</span>();
+    }
+    <span class="tok-kw">throw</span> <span class="tok-type">Exception</span>(<span class="tok-str">'Erro ${response.statusCode}: ${response.body}'</span>);
+  }
+
+  <span class="tok-comment">/// POST /produtos</span>
+  <span class="tok-type">Future</span>&lt;<span class="tok-type">Produto</span>&gt; <span class="tok-fn">criarProduto</span>(<span class="tok-type">String</span> nome, <span class="tok-type">double</span> preco, <span class="tok-type">String</span> descricao) <span class="tok-kw">async</span> {
+    <span class="tok-kw">final</span> headers = <span class="tok-kw">await</span> <span class="tok-fn">_getHeaders</span>();
+    <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">post</span>(
+      <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$baseUrl/produtos'</span>),
+      headers: headers,
+      body: jsonEncode({
+        <span class="tok-str">'nome'</span>: nome,
+        <span class="tok-str">'preco'</span>: preco,
+        <span class="tok-str">'descricao'</span>: descricao,
+        <span class="tok-str">'disponivel'</span>: <span class="tok-kw">true</span>,
+      }),
+    );
+
+    <span class="tok-kw">if</span> (response.statusCode == <span class="tok-num">201</span>) {
+      <span class="tok-kw">return</span> <span class="tok-type">Produto</span>.<span class="tok-fn">fromJson</span>(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
+    <span class="tok-kw">throw</span> <span class="tok-type">Exception</span>(<span class="tok-str">'Falha ao cadastrar produto.'</span>);
+  }
+
+  <span class="tok-comment">/// DELETE /produtos/{id}</span>
+  <span class="tok-type">Future</span>&lt;<span class="tok-type">void</span>&gt; <span class="tok-fn">excluirProduto</span>(<span class="tok-type">int</span> id) <span class="tok-kw">async</span> {
+    <span class="tok-kw">final</span> headers = <span class="tok-kw">await</span> <span class="tok-fn">_getHeaders</span>();
+    <span class="tok-kw">final</span> response = <span class="tok-kw">await</span> http.<span class="tok-fn">delete</span>(
+      <span class="tok-type">Uri</span>.<span class="tok-fn">parse</span>(<span class="tok-str">'$baseUrl/produtos/$id'</span>),
+      headers: headers,
+    );
+
+    <span class="tok-kw">if</span> (response.statusCode != <span class="tok-num">200</span>) {
+      <span class="tok-kw">throw</span> <span class="tok-type">Exception</span>(<span class="tok-str">'Falha ao excluir produto.'</span>);
+    }
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- PASSO 8 -->
+      <section id="testes" class="tutorial-step">
+        <div class="step-header">
+          <div class="step-number">8</div>
+          <h2>Como Validar suas Requisições no Swagger e cURL</h2>
+        </div>
+        <p>
+          Antes de testar no seu celular ou emulador, você pode validar o funcionamento da autenticação direto pelo navegador ou terminal:
+        </p>
+
+        <h3>1. Testando no Swagger UI (/docs)</h3>
+        <ol>
+          <li>Abra o navegador em <a href="/docs" target="_blank" style="color: #818cf8;">http://localhost:8000/docs</a>.</li>
+          <li>Repare que agora os endpoints <code>/produtos</code> possuem um ícone de cadeado preto à direita.</li>
+          <li>Clique no botão verde superior <strong>Authorize</strong> (com cadeado).</li>
+          <li>Digite o usuário <code>aluno</code> e a senha <code>123456</code> e clique em <strong>Authorize</strong>.</li>
+          <li>Pronto! Todas as rotas testadas pelo Swagger agora enviarão o token automaticamente.</li>
+        </ol>
+
+        <h3>2. Testando via Terminal com cURL</h3>
+        <p>Obtenha o token pelo endpoint de login:</p>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">1. Obter Token via cURL</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "aluno", "senha": "123456"}'</code></pre>
+        </div>
+
+        <p>Em seguida, use o token recebido no cabeçalho <code>Authorization</code> para listar os produtos:</p>
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-filename">2. Listar Produtos com Bearer Token</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+          </div>
+          <pre><code>curl -X GET http://localhost:8000/produtos \
+  -H "Authorization: Bearer &lt;COLE_SEU_TOKEN_AQUI&gt;"</code></pre>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">🎉</div>
+          <div class="callout-content">
+            <strong>Parabéns!</strong><br>
+            Você concluiu o ciclo completo de segurança de uma aplicação móvel profissional: Login, Cadastro, Persistência Local segura e Requisições HTTP Autenticadas com JWT!
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <button id="backToTop" title="Voltar ao Topo">↑</button>
+
+  <script>
+    // Barra de progresso de leitura
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('progress-bar').style.width = scrolled + '%';
+
+      const backBtn = document.getElementById('backToTop');
+      if (winScroll > 400) {
+        backBtn.classList.add('visible');
+      } else {
+        backBtn.classList.remove('visible');
+      }
+    });
+
+    document.getElementById('backToTop').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function copyCode(button) {
+      const codeElement = button.closest('.code-container').querySelector('pre code');
+      navigator.clipboard.writeText(codeElement.innerText).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copiado!';
+        button.classList.add('copied');
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    const sections = document.querySelectorAll('.tutorial-step, header');
+    const navLinks = document.querySelectorAll('.toc-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

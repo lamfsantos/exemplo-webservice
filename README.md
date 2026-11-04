@@ -113,6 +113,7 @@ Ao programar o app mobile, **não use `localhost` na URL base** (exceto no simul
 | `GET` | `/tutorial` | Tutorial interativo Flutter: Consumo de API REST (Catálogo de Produtos) |
 | `GET` | `/tutorial-notificacoes` | Tutorial interativo Flutter: Notificações Push em Tempo Real (WebSockets) |
 | `GET` | `/tutorial-login` | Tutorial interativo Flutter: Autenticação JWT, Telas de Login e Cadastro |
+| `GET` | `/tutorial-requisicoes` | Tutorial interativo Flutter: Como Assinar Requisições com Token JWT |
 | `GET, POST` | `/teste-formulario` | Rota didática para a turma de Web 1 testar envio de formulários HTML (GET ou POST) |
 | `POST` | `/auth/cadastrar` | Cadastra um novo usuário com senha criptografada via BCrypt |
 | `POST` | `/auth/login` | Login com envio de JSON (ideal para apps Mobile Flutter/React Native/Android/iOS) |

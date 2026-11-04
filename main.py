@@ -85,6 +85,7 @@ def raiz():
             "atividade_1_produtos_api": "/tutorial",
             "atividade_2_notificacoes_push": "/tutorial-notificacoes",
             "atividade_3_autenticacao_jwt": "/tutorial-login",
+            "atividade_4_requisicoes_token": "/tutorial-requisicoes",
             "web_1_teste_formulario": "/teste-formulario"
         },
         "endpoints": {
@@ -165,6 +166,33 @@ def obter_tutorial_auth():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Documento tutorial de autenticação não encontrado no servidor."
+        )
+    return FileResponse(caminho, media_type="text/html; charset=utf-8")
+
+
+@app.get(
+    "/tutorial-requisicoes",
+    response_class=FileResponse,
+    tags=["Documentação & Tutoriais"],
+    summary="Atividade 4: Como Assinar Requisições com Token JWT no Flutter",
+    description="Apresenta o tutorial completo em HTML ensinando como enviar o cabeçalho Authorization: Bearer <token> nas requisições HTTP do Flutter."
+)
+@app.get(
+    "/tutorial/requisicoes",
+    response_class=FileResponse,
+    include_in_schema=False
+)
+@app.get(
+    "/tutorial-token",
+    response_class=FileResponse,
+    include_in_schema=False
+)
+def obter_tutorial_requisicoes():
+    caminho = obter_caminho_static("tutorial_requisicoes.html")
+    if not os.path.exists(caminho):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Documento tutorial de requisições autenticadas não encontrado no servidor."
         )
     return FileResponse(caminho, media_type="text/html; charset=utf-8")
 
@@ -352,6 +380,7 @@ if __name__ == "__main__":
     print(f"  📘 Atividade 1 (Produtos):   http://localhost:{porta}/tutorial")
     print(f"  🔔 Atividade 2 (Push WSS):   http://localhost:{porta}/tutorial-notificacoes")
     print(f"  🔐 Atividade 3 (Auth JWT):   http://localhost:{porta}/tutorial-login")
+    print(f"  🔑 Atividade 4 (Req. Token): http://localhost:{porta}/tutorial-requisicoes")
     print(f"  📝 Web 1 (Teste Form HTML):  http://localhost:{porta}/teste-formulario")
     print(f"  🔐 Autenticação JWT:       http://localhost:{porta}/auth/login (Swagger: /docs)")
     print("-" * 70)
