@@ -176,11 +176,12 @@ def obter_tutorial_auth():
     response_model=List[Produto],
     tags=["Produtos"],
     summary="Listar todos os produtos",
-    description="Retorna a lista completa de produtos cadastrados. Permite filtrar por disponibilidade ou termo de busca."
+    description="Retorna a lista completa de produtos cadastrados. Permite filtrar por disponibilidade ou termo de busca. Requer autenticação JWT."
 )
 def listar_produtos(
     apenas_disponiveis: Optional[bool] = Query(None, description="Se true, lista apenas produtos disponíveis"),
-    busca: Optional[str] = Query(None, description="Filtrar produtos por termo no nome ou descrição")
+    busca: Optional[str] = Query(None, description="Filtrar produtos por termo no nome ou descrição"),
+    usuario_logado: Usuario = Depends(obter_usuario_atual)
 ):
     produtos = db.listar_todos()
     
@@ -202,9 +203,12 @@ def listar_produtos(
     response_model=Produto,
     tags=["Produtos"],
     summary="Buscar produto por ID",
-    description="Retorna os detalhes de um produto a partir de seu ID numérico."
+    description="Retorna os detalhes de um produto a partir de seu ID numérico. Requer autenticação JWT."
 )
-def buscar_produto(produto_id: int):
+def buscar_produto(
+    produto_id: int,
+    usuario_logado: Usuario = Depends(obter_usuario_atual)
+):
     produto = db.buscar_por_id(produto_id)
     if not produto:
         raise HTTPException(
@@ -215,15 +219,9 @@ def buscar_produto(produto_id: int):
 
 
 # =====================================================================
-# DICA DIDÁTICA PARA PROTEGER ROTAS COM JWT EM AULA:
-# Para exigir autenticação em qualquer endpoint abaixo (ex: POST, PUT, DELETE),
-# basta adicionar a dependência 'usuario_logado: Usuario = Depends(obter_usuario_atual)'
-# como parâmetro da função.
-#
-# Exemplo protegido:
-# @app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
-# def criar_produto(novo_produto: ProdutoCreate, usuario_logado: Usuario = Depends(obter_usuario_atual)):
-#     return db.criar_produto(novo_produto)
+# ROTAS PROTEGIDAS COM JWT (OBTER_USUARIO_ATUAL):
+# Todos os endpoints abaixo requerem autenticação JWT via cabeçalho
+# 'Authorization: Bearer <token>' obtido em /auth/login ou /auth/token.
 # =====================================================================
 
 @app.post(
@@ -232,9 +230,12 @@ def buscar_produto(produto_id: int):
     status_code=status.HTTP_201_CREATED,
     tags=["Produtos"],
     summary="Cadastrar novo produto",
-    description="Cria um novo produto com ID sequencial automático e salva no arquivo JSON."
+    description="Cria um novo produto com ID sequencial automático e salva no arquivo JSON. Requer autenticação JWT."
 )
-def criar_produto(novo_produto: ProdutoCreate):
+def criar_produto(
+    novo_produto: ProdutoCreate,
+    usuario_logado: Usuario = Depends(obter_usuario_atual)
+):
     return db.criar_produto(novo_produto)
 
 
@@ -243,9 +244,13 @@ def criar_produto(novo_produto: ProdutoCreate):
     response_model=Produto,
     tags=["Produtos"],
     summary="Atualizar produto existente",
-    description="Atualiza um ou mais campos de um produto existente. Campos omitidos permanecem inalterados."
+    description="Atualiza um ou mais campos de um produto existente. Campos omitidos permanecem inalterados. Requer autenticação JWT."
 )
-def atualizar_produto(produto_id: int, dados: ProdutoUpdate):
+def atualizar_produto(
+    produto_id: int,
+    dados: ProdutoUpdate,
+    usuario_logado: Usuario = Depends(obter_usuario_atual)
+):
     produto_atualizado = db.atualizar_produto(produto_id, dados)
     if not produto_atualizado:
         raise HTTPException(
@@ -260,9 +265,12 @@ def atualizar_produto(produto_id: int, dados: ProdutoUpdate):
     status_code=status.HTTP_200_OK,
     tags=["Produtos"],
     summary="Remover produto",
-    description="Exclui um produto do arquivo JSON a partir do seu ID."
+    description="Exclui um produto do arquivo JSON a partir do seu ID. Requer autenticação JWT."
 )
-def remover_produto(produto_id: int):
+def remover_produto(
+    produto_id: int,
+    usuario_logado: Usuario = Depends(obter_usuario_atual)
+):
     sucesso = db.remover_produto(produto_id)
     if not sucesso:
         raise HTTPException(
@@ -300,9 +308,12 @@ async def websocket_notificacoes(websocket: WebSocket):
     "/notificacoes/enviar", 
     tags=["Notificações"], 
     summary="Disparar notificação para todos os apps conectados",
-    description="Endpoint usado pelo professor para enviar um Push simulado para todo mundo."
+    description="Endpoint usado pelo professor para enviar um Push simulado para todo mundo. Requer autenticação JWT."
 )
-async def disparar_notificacao_geral(payload: NotificacaoPayload):
+async def disparar_notificacao_geral(
+    payload: NotificacaoPayload,
+    usuario_logado: Usuario = Depends(obter_usuario_atual)
+):
     # Em pydantic v2 usamos model_dump, se der erro cai pro .dict()
     dados = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
     await notificacoes_manager.enviar_para_todos(dados)

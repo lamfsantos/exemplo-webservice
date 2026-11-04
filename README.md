@@ -117,12 +117,13 @@ Ao programar o app mobile, **não use `localhost` na URL base** (exceto no simul
 | `POST` | `/auth/cadastrar` | Cadastra um novo usuário com senha criptografada via BCrypt |
 | `POST` | `/auth/login` | Login com envio de JSON (ideal para apps Mobile Flutter/React Native/Android/iOS) |
 | `POST` | `/auth/token` | Login OAuth2 via formulário (compatível com o botão "Authorize" do Swagger UI) |
-| `GET` | `/auth/me` | Rota protegida de exemplo: retorna os dados do usuário autenticado |
-| `GET` | `/produtos` | Retorna a lista de produtos (aceita filtros: `?apenas_disponiveis=true` ou `?busca=termo`) |
-| `GET` | `/produtos/{id}` | Retorna os detalhes de um produto específico |
-| `POST` | `/produtos` | Cadastra um novo produto (cria ID sequencial automático) |
-| `PUT` | `/produtos/{id}` | Atualiza campos de um produto existente |
-| `DELETE` | `/produtos/{id}` | Remove um produto |
+| `GET` | `/auth/me` | Rota protegida: retorna os dados do usuário autenticado |
+| `GET` | `/produtos` | Retorna a lista de produtos (aceita filtros: `?apenas_disponiveis=true` ou `?busca=termo`) 🔒 *Requer Token* |
+| `GET` | `/produtos/{id}` | Retorna os detalhes de um produto específico 🔒 *Requer Token* |
+| `POST` | `/produtos` | Cadastra um novo produto (cria ID sequencial automático) 🔒 *Requer Token* |
+| `PUT` | `/produtos/{id}` | Atualiza campos de um produto existente 🔒 *Requer Token* |
+| `DELETE` | `/produtos/{id}` | Remove um produto 🔒 *Requer Token* |
+| `POST` | `/notificacoes/enviar` | Dispara notificação push para todos os apps conectados 🔒 *Requer Token* |
 
 ---
 
@@ -244,8 +245,10 @@ Envie os dados como JSON:
 - Digite `aluno` e `123456`.
 - Todas as rotas testadas no Swagger passarão a incluir o cabeçalho `Authorization: Bearer <token>` automaticamente!
 
-### 🛡️ Como Proteger Rotas em Aula (Passo a Passo)
-Nenhuma rota de produtos vem protegida por padrão para não quebrar testes iniciais. Para proteger qualquer rota existente durante a aula (ex: `POST /produtos`), basta adicionar a dependência `Depends(obter_usuario_atual)`:
+### 🛡️ Proteção de Rotas com JWT
+Todas as rotas de produtos (`GET`, `POST`, `PUT`, `DELETE /produtos`) e o envio de notificações (`POST /notificacoes/enviar`) estão protegidas por padrão via JWT. Apenas os tutoriais, a página inicial e os testes de formulários HTML permanecem públicos.
+
+Para proteger rotas no FastAPI, utiliza-se a dependência `Depends(obter_usuario_atual)`:
 
 ```python
 from fastapi import Depends
@@ -255,7 +258,7 @@ from models import Usuario
 @app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
 def criar_produto(
     novo_produto: ProdutoCreate, 
-    usuario_logado: Usuario = Depends(obter_usuario_atual)  # <-- BASTA ADICIONAR ESTA LINHA!
+    usuario_logado: Usuario = Depends(obter_usuario_atual)  # <-- Proteção via Token Bearer
 ):
     print(f"Produto cadastrado por: {usuario_logado.username}")
     return db.criar_produto(novo_produto)
