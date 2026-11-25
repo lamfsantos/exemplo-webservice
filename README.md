@@ -1,290 +1,305 @@
-# 📱 Web Service Didático em FastAPI (Exemplo para Mobile)
+# 🎬 Desafio Técnico Mobile: Catálogo de Obras & Avaliações
 
-Este repositório contém uma API REST simples em Python utilizando **FastAPI** com persistência de dados em arquivo **JSON**. Foi desenvolvida especialmente para que estudantes de **Desenvolvimento Mobile** possam realizar seus primeiros testes de comunicação HTTP/REST com clientes móveis (Android com Kotlin/Retrofit/Ktor, iOS com Swift/URLSession/Alamofire, Flutter com Dio/Http, ou React Native com Axios/Fetch).
+Bem-vindo ao desafio técnico prático de desenvolvimento mobile! Este projeto simula um teste real de contratação para uma vaga de **Desenvolvedor(a) Mobile (Flutter / Kotlin / React Native / Swift)**.
 
----
-
-## ⚡ 1. Executando Direto (Sem Instalar o Python)
-
-Se você já possui o arquivo executável compilado (`servidor_produtos.exe` no Windows ou `servidor_produtos` no Linux):
-
-1. Dê um **duplo clique** no executável ou execute-o pelo terminal:
-   - **Windows:** `servidor_produtos.exe`
-   - **Linux:** `./servidor_produtos`
-2. O servidor iniciará imediatamente e criará automaticamente o arquivo `produtos.json` caso ele não exista na pasta.
+Você deverá construir um aplicativo conectado a uma API RESTful em produção para visualização de catálogo, avaliações colaborativas e gerenciamento de favoritos.
 
 ---
 
-## 🖥️ 2. Banner de Inicialização no Terminal
+## 📌 1. Visão Geral do Desafio
 
-Ao iniciar o servidor, uma tela informativa é exibida no console com todos os links úteis e a detecção do seu IP local na rede Wi-Fi:
+O objetivo é desenvolver um aplicativo mobile fluido, bem arquitetado e resiliente que consuma os serviços fornecidos por esta API.
 
-```text
-======================================================================
-  🚀 SERVIDOR DA API DE PRODUTOS INICIADO COM SUCESSO!
-======================================================================
-  📖 Documentação Swagger UI:  http://localhost:8000/docs
-  📖 Documentação ReDoc:       http://localhost:8000/redoc
-----------------------------------------------------------------------
-  📲 Para Conectar seu App Mobile:
-     • Emulador Android:        http://10.0.2.2:8000
-     • Simulador iOS / Web:     http://localhost:8000
-     • Aparelho Físico (Wi-Fi): http://192.168.1.15:8000
-----------------------------------------------------------------------
-  💾 Arquivo de Dados (JSON):  produtos.json
-  💡 Pressione CTRL + C para encerrar o servidor a qualquer momento.
-======================================================================
+### 📱 Escopo do Aplicativo (Requisitos do App)
+1. **Autenticação (Login):**
+   - Tela de login com validação de campos (e-mail e senha).
+   - Armazenamento seguro do token JWT (ex: `flutter_secure_storage`, `EncryptedSharedPreferences`, etc.).
+   - Logout (limpeza do token e redirecionamento para tela de login).
+2. **Catálogo de Obras (Home):**
+   - Listagem paginada (Scroll infinito ou paginação por páginas).
+   - Barra de busca textual por título (`search`).
+   - Filtros rápidos por categoria (`category`: Ação, Ficção Científica, Animação, Drama, Aventura, Terror, Comédia, Séries).
+   - Cada card deve exibir: Pôster da obra, Título, Ano, Categoria, Nota Média (`average_rating`) e ícone indicativo se está favoritado (`is_favorite`).
+3. **Detalhes da Obra:**
+   - Exibição em destaque do pôster em alta resolução, sinopse e nota média.
+   - Botão interativo para favoritar / desfavoritar a obra em tempo real.
+   - Lista das avaliações e comentários feitos por outros usuários/alunos.
+   - Formulário para o próprio usuário enviar ou atualizar sua avaliação (nota de 1 a 5 estrelas e comentário opcional).
+4. **Meus Favoritos:**
+   - Aba ou tela dedicada listando apenas as obras favoritadas pelo usuário logado.
+   - Possibilidade de remover dos favoritos diretamente por esta tela.
+5. **Resiliência & UX:**
+   - Estados bem definidos: **Carregando (Shimmer / Loading)**, **Vazio**, **Erro com botão de tentar novamente**.
+   - Tratamento adequado de erros da API (401 Token Expirado, 404 Não Encontrado, 429 Muitas Requisições).
+
+---
+
+## 🔗 2. Acesso à API & Documentação Interativa (Swagger)
+
+A API disponibiliza uma interface interativa completa via Swagger UI:
+
+- **Swagger UI (Documentação Interativa):** `https://SUA-API-NO-RENDER.onrender.com/docs`
+- **ReDoc (Documentação Alternativa):** `https://SUA-API-NO-RENDER.onrender.com/redoc`
+- **Health Check:** `https://SUA-API-NO-RENDER.onrender.com/health`
+
+> 💡 **Como testar pelo Swagger:**
+> 1. Execute a rota `POST /auth/login` com as credenciais de teste abaixo.
+> 2. Copie o valor retornado no campo `token`.
+> 3. Clique no botão verde **Authorize** (no topo superior direito da página do Swagger).
+> 4. Cole o token no campo de valor e clique em **Authorize**. Pronto! Todas as rotas autenticadas funcionarão diretamente pelo navegador.
+
+---
+
+## 🔑 3. Credenciais de Teste
+
+Para agilizar o desenvolvimento, utilize a conta de testes compartilhada abaixo:
+
+| E-mail | Senha | Perfil |
+| :--- | :--- | :--- |
+| `teste@app.com` | `123456` | Aluno Geral / Demonstração |
+| `lucas@estudante.ifms.edu.br` | `123456` | Aluno 1 |
+| `mariana@estudante.ifms.edu.br` | `123456` | Aluna 2 |
+| `professor@ifms.edu.br` | `123456` | Docente |
+
+---
+
+## 📡 4. Especificação Técnica dos Endpoints
+
+Todas as requisições autenticadas devem obrigatoriamente enviar o header HTTP:
+```http
+Authorization: Bearer <seu_token_jwt_aqui>
+Content-Type: application/json
 ```
 
 ---
 
-## 🛠️ 3. Como Gerar o Executável (.exe)
-
-O projeto já inclui scripts de build prontos que utilizam o **PyInstaller** para empacotar a aplicação com todas as bibliotecas necessárias em um único arquivo independente.
-
-### No Windows:
-Basta dar um duplo clique no arquivo [`build.bat`](file:///home/furlan/Documentos/workspace/exemplo/build.bat) ou executar no Prompt de Comando / PowerShell:
-```cmd
-build.bat
+### 4.1. Verificação de Integridade (Health Check)
+* **Rota:** `GET /health`
+* **Autenticação:** Pública (Sem token).
+* **Resposta de Sucesso (200 OK):**
+```json
+{
+  "status": "ok"
+}
 ```
-O executável gerado estará na pasta `dist\servidor_produtos.exe`. Você pode enviar apenas esse `.exe` para os alunos!
 
-### No Linux / macOS:
-Execute o script [`build.sh`](file:///home/furlan/Documentos/workspace/exemplo/build.sh):
+---
+
+### 4.2. Autenticação (Login)
+* **Rota:** `POST /auth/login`
+* **Autenticação:** Pública.
+* **Corpo da Requisição (JSON):**
+```json
+{
+  "email": "teste@app.com",
+  "password": "123456"
+}
+```
+* **Resposta de Sucesso (200 OK):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "name": "Aluno Teste (Geral)",
+    "email": "teste@app.com"
+  }
+}
+```
+* **Resposta de Erro (401 Unauthorized):**
+```json
+{
+  "error": "E-mail ou senha incorretos"
+}
+```
+
+---
+
+### 4.3. Listar Obras do Catálogo
+* **Rota:** `GET /items`
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Parâmetros de Consulta (Query Parameters):**
+  * `page` *(inteiro, padrão: 1)*: Número da página atual.
+  * `limit` *(inteiro, padrão: 10, máx: 50)*: Quantidade de itens por página.
+  * `search` *(texto, opcional)*: Busca que contenha o texto no título (case-insensitive).
+  * `category` *(texto, opcional)*: Filtro por categoria exata (`Ação`, `Drama`, etc.).
+* **Exemplo de Chamada:** `GET /items?page=1&limit=10&category=Ficção Científica&search=Matrix`
+* **Resposta de Sucesso (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "Matrix",
+      "synopsis": "Um programador de computador descobre que a realidade que vive é uma simulação...",
+      "category": "Ação",
+      "release_year": 1999,
+      "poster_url": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+      "created_at": "2026-11-25T01:00:00Z",
+      "is_favorite": false,
+      "average_rating": 4.8
+    }
+  ],
+  "total": 42,
+  "page": 1,
+  "limit": 10,
+  "last_page": 5
+}
+```
+
+---
+
+### 4.4. Detalhes de uma Obra & Avaliações
+* **Rota:** `GET /items/{id}`
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Resposta de Sucesso (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Matrix",
+  "synopsis": "Um programador de computador descobre que a realidade que vive é uma simulação...",
+  "category": "Ação",
+  "release_year": 1999,
+  "poster_url": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+  "created_at": "2026-11-25T01:00:00Z",
+  "is_favorite": true,
+  "average_rating": 4.8,
+  "reviews": [
+    {
+      "id": 15,
+      "user_id": 3,
+      "user_name": "Lucas Aluno",
+      "rating": 5,
+      "comment": "Um marco absoluto do cinema de ficção!",
+      "created_at": "2026-11-25T01:15:00Z"
+    }
+  ]
+}
+```
+* **Resposta de Erro (404 Not Found):**
+```json
+{
+  "error": "Obra não encontrada"
+}
+```
+
+---
+
+### 4.5. Avaliar Obra (Criar ou Atualizar Nota)
+* **Rota:** `POST /items/{id}/reviews`
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Comportamento:** É idempotente por aluno. Se o mesmo aluno avaliar a obra novamente, a nota anterior é atualizada automaticamente (*upsert*).
+* **Corpo da Requisição (JSON):**
+```json
+{
+  "rating": 5,
+  "comment": "Filme espetacular, atuações incríveis!"
+}
+```
+*Validações:* `rating` deve ser um número inteiro de 1 a 5. `comment` é opcional.
+* **Resposta de Sucesso (201 Created):**
+```json
+{
+  "id": 20,
+  "user_id": 1,
+  "user_name": "Aluno Teste (Geral)",
+  "rating": 5,
+  "comment": "Filme espetacular, atuações incríveis!",
+  "created_at": "2026-11-25T01:20:00Z"
+}
+```
+
+---
+
+### 4.6. Listar Meus Favoritos
+* **Rota:** `GET /me/favorites`
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Resposta de Sucesso (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Matrix",
+    "synopsis": "Um programador de computador descobre...",
+    "category": "Ação",
+    "release_year": 1999,
+    "poster_url": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+    "created_at": "2026-11-25T01:00:00Z",
+    "is_favorite": true,
+    "average_rating": 4.8
+  }
+]
+```
+
+---
+
+### 4.7. Adicionar aos Favoritos
+* **Rota:** `POST /me/favorites/{id}`
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Comportamento:** Idempotente (se clicar no botão duas vezes rápido, não gera erro 500).
+* **Resposta de Sucesso (200 OK):**
+```json
+{
+  "message": "Obra adicionada aos favoritos com sucesso",
+  "item_id": 1,
+  "is_favorite": true
+}
+```
+
+---
+
+### 4.8. Remover dos Favoritos
+* **Rota:** `DELETE /me/favorites/{id}`
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Resposta de Sucesso (204 No Content):** Corpo vazio.
+
+---
+
+## ⚠️ 5. Cuidados Operacionais & Dicas de Avaliação da Vaga
+
+1. **Cold Start do Render (Plano Gratuito):**
+   - O servidor no Render hiberna após 15 minutos sem chamadas. O primeiro acesso pode demorar entre 20 a 40 segundos para "acordar".
+   - *Dica para o App:* Configure um tempo de `timeout` razoável no seu cliente HTTP (ex: 30 a 45 segundos no Dio/Http) e exiba um indicador de carregamento claro.
+2. **Rate Limiting (Proteção contra loops):**
+   - A API possui um limite de **100 requisições por minuto por IP**.
+   - Cuidado com `ScrollController` ou listeners no Flutter/React Native para não disparar requisições em cascata desnecessárias. Se exceder, receberá status `429 Too Many Requests`.
+3. **Imagens Reais (CDN TMDB):**
+   - Todos os pôsteres são servidos diretamente pela CDN oficial do TMDB (`https://image.tmdb.org/t/p/w500/...`). Utilize componentes de cache de imagem no app (ex: `cached_network_image`) para garantir alta performance.
+
+---
+
+## 🛠️ 6. Guia para o Professor (Administração & Execução Local)
+
+### 1. Criar as Tabelas no Supabase
+Execute o conteúdo do arquivo [`schema.sql`](file:///home/furlan/Documentos/workspace/exemplo/schema.sql) no **SQL Editor** do painel do Supabase.
+
+### 2. Configurar o arquivo `.env`
+Crie um arquivo `.env` baseado no `.env.example`:
+```env
+SUPABASE_URL=https://atiuybalximxhqhzjxst.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key
+JWT_SECRET=sua_chave_secreta_jwt
+PORT=10000
+```
+
+### 3. Rodar a Carga Inicial de Dados (`seed.py`)
 ```bash
-./build.sh
+python seed.py
 ```
-O binário gerado estará em `dist/servidor_produtos`.
+Esse comando cadastra automaticamente as 45 obras completas e os usuários de teste no Supabase.
 
----
+### 4. Rodar o Servidor Localmente
+```bash
+# Ativar o ambiente virtual
+source .venv/bin/activate
 
-## 🚀 4. Executando via Código Fonte Python
-
-Caso prefira rodar ou editar o código-fonte:
-
-1. **Abra a pasta do projeto no terminal:**
-   ```bash
-   cd exemplo
-   ```
-
-2. **Instale as dependências:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Inicie o servidor:**
-   ```bash
-   python main.py
-   ```
-   *(ou `uvicorn main:app --reload --host 0.0.0.0 --port 8000`)*
-
----
-
-## 📖 5. Documentação Automática Interativa (Swagger & ReDoc)
-
-Com o servidor em execução, abra o navegador em:
-
-- **Swagger UI (OpenAPI):** [http://localhost:8000/docs](http://localhost:8000/docs)
-  - Permite testar as requisições (botão *Try it out*), enviar corpos JSON e ver as respostas em tempo real.
-- **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
-- **JSON OpenAPI Schema:** [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
-
----
-
-## 📲 6. Como Conectar a partir do Aplicativo Mobile
-
-Ao programar o app mobile, **não use `localhost` na URL base** (exceto no simulador iOS), pois no celular `localhost` aponta para o próprio aparelho:
-
-| Ambiente do App | URL Base recomendada | Observação |
-| :--- | :--- | :--- |
-| **Emulador Android (Android Studio)** | `http://10.0.2.2:8000` | O endereço `10.0.2.2` é o alias do Android Emulator para acessar o `localhost` do seu PC. |
-| **Simulador iOS (Xcode)** | `http://localhost:8000` | Compartilha a mesma rede do computador. |
-| **Dispositivo Físico (Android / iPhone)** | `http://<IP_DO_SEU_PC>:8000` | O celular e o computador devem estar na **mesma rede Wi-Fi**. O terminal exibe seu IP ao iniciar! |
-
-> ⚠️ **Atenção (Android Cleartext Traffic):** Em versões recentes do Android, conexões `http://` locais precisam de `android:usesCleartextTraffic="true"` na tag `<application>` do arquivo `AndroidManifest.xml`.
-
----
-
-## 📋 7. Endpoints da API
-
-| Método | Rota | Descrição |
-| :--- | :--- | :--- |
-| `GET` | `/` | Boas-vindas e resumo dos endpoints disponíveis |
-| `GET` | `/tutorial` | Tutorial interativo Flutter: Consumo de API REST (Catálogo de Produtos) |
-| `GET` | `/tutorial-notificacoes` | Tutorial interativo Flutter: Notificações Push em Tempo Real (WebSockets) |
-| `GET` | `/tutorial-login` | Tutorial interativo Flutter: Autenticação JWT, Telas de Login e Cadastro |
-| `GET` | `/tutorial-requisicoes` | Tutorial interativo Flutter: Como Assinar Requisições com Token JWT |
-| `GET, POST` | `/teste-formulario` | Rota didática para a turma de Web 1 testar envio de formulários HTML (GET ou POST) |
-| `POST` | `/auth/cadastrar` | Cadastra um novo usuário com senha criptografada via BCrypt |
-| `POST` | `/auth/login` | Login com envio de JSON (ideal para apps Mobile Flutter/React Native/Android/iOS) |
-| `POST` | `/auth/token` | Login OAuth2 via formulário (compatível com o botão "Authorize" do Swagger UI) |
-| `GET` | `/auth/me` | Rota protegida: retorna os dados do usuário autenticado |
-| `GET` | `/produtos` | Retorna a lista de produtos (aceita filtros: `?apenas_disponiveis=true` ou `?busca=termo`) 🔒 *Requer Token* |
-| `GET` | `/produtos/{id}` | Retorna os detalhes de um produto específico 🔒 *Requer Token* |
-| `POST` | `/produtos` | Cadastra um novo produto (cria ID sequencial automático) 🔒 *Requer Token* |
-| `PUT` | `/produtos/{id}` | Atualiza campos de um produto existente 🔒 *Requer Token* |
-| `DELETE` | `/produtos/{id}` | Remove um produto 🔒 *Requer Token* |
-| `POST` | `/notificacoes/enviar` | Dispara notificação push para todos os apps conectados 🔒 *Requer Token* |
-
----
-
-## 🧪 8. Teste de Formulários HTML (Turma de Web 1)
-
-Os estudantes que estão aprendendo HTML básico podem testar o envio de formulários diretamente apontando o `action` para o servidor (seja rodando localmente ou no Render):
-
-```html
-<form action="https://seu-servidor.onrender.com/teste-formulario" method="POST">
-    <label for="nome">Nome:</label>
-    <input type="text" id="nome" name="nome" required>
-
-    <label for="email">E-mail:</label>
-    <input type="email" id="email" name="email" required>
-
-    <button type="submit">Enviar Formulário</button>
-</form>
+# Iniciar o servidor com reload
+uvicorn main:app --reload --port 10000
 ```
 
-- **Acesso direto no navegador (`GET /teste-formulario`):** Exibe um **laboratório interativo** com guia didático e código de exemplo pronto para copiar.
-- **Ao submeter o formulário (`POST` ou `GET`):** O servidor gera uma página estilizada confirmando o recebimento dos dados, destacando quais atributos `name` foram recebidos e os valores digitados.
-- **Suporte a Redirecionamento:** Se o aluno incluir `<input type="hidden" name="_redirect" value="https://exemplo.com">`, o servidor detecta a URL de destino e disponibiliza o redirecionamento.
-
----
-
-## 📝 8. Exemplos de Payloads JSON
-
-### Criando um Produto (`POST /produtos`)
-**Corpo da Requisição (JSON):**
-```json
-{
-  "nome": "Teclado Mecânico RGB",
-  "preco": 349.90,
-  "descricao": "Switches azuis, padrão ABNT2, cabo removível",
-  "disponivel": true
-}
-```
-
-**Resposta (`201 Created`):**
-```json
-{
-  "id": 5,
-  "nome": "Teclado Mecânico RGB",
-  "preco": 349.90,
-  "descricao": "Switches azuis, padrão ABNT2, cabo removível",
-  "disponivel": true
-}
-```
-
----
-
-### Atualizando um Produto (`PUT /produtos/{id}`)
-**Corpo da Requisição (JSON):**
-```json
-{
-  "preco": 299.90,
-  "disponivel": false
-}
-```
-
----
-
-### Resposta de Erro (`404 Not Found`)
-```json
-{
-  "detail": "Produto com ID 999 não encontrado."
-}
-```
-
----
-
----
-
-## 🔐 9. Sistema de Autenticação com JWT
-
-A API inclui um sistema completo de controle de acesso baseado em **JSON Web Tokens (JWT)** e senhas criptografadas com **BCrypt**:
-
-### 👤 Usuários Padrão para Testes Rápidos
-Caso o arquivo `usuarios.json` não exista, ele será criado automaticamente com as contas:
-- **Admin:** Usuário `admin` | Senha: `admin123`
-- **Aluno:** Usuário `aluno` | Senha: `123456`
-
-### 📝 Cadastro de Novos Usuários (`POST /auth/cadastrar`)
-**Corpo da Requisição (JSON):**
-```json
-{
-  "username": "meu_usuario",
-  "senha": "minhasenhaforte",
-  "nome": "Meu Nome Completo"
-}
-```
-**Resposta (`201 Created`):**
-```json
-{
-  "id": 3,
-  "username": "meu_usuario",
-  "nome": "Meu Nome Completo"
-}
-```
-
-### 🔑 Login nos Aplicativos Mobile & Web (`POST /auth/login`)
-Envie os dados como JSON:
-```json
-{
-  "username": "aluno",
-  "senha": "123456"
-}
-```
-**Resposta (`200 OK`):**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer"
-}
-```
-
-### 🔒 Login no Swagger UI (`POST /auth/token`)
-- No navegador ([http://localhost:8000/docs](http://localhost:8000/docs)), clique no botão verde **Authorize** (cadeado).
-- Digite `aluno` e `123456`.
-- Todas as rotas testadas no Swagger passarão a incluir o cabeçalho `Authorization: Bearer <token>` automaticamente!
-
-### 🛡️ Proteção de Rotas com JWT
-Todas as rotas de produtos (`GET`, `POST`, `PUT`, `DELETE /produtos`) e o envio de notificações (`POST /notificacoes/enviar`) estão protegidas por padrão via JWT. Apenas os tutoriais, a página inicial e os testes de formulários HTML permanecem públicos.
-
-Para proteger rotas no FastAPI, utiliza-se a dependência `Depends(obter_usuario_atual)`:
-
-```python
-from fastapi import Depends
-from auth import obter_usuario_atual
-from models import Usuario
-
-@app.post("/produtos", response_model=Produto, status_code=status.HTTP_201_CREATED)
-def criar_produto(
-    novo_produto: ProdutoCreate, 
-    usuario_logado: Usuario = Depends(obter_usuario_atual)  # <-- Proteção via Token Bearer
-):
-    print(f"Produto cadastrado por: {usuario_logado.username}")
-    return db.criar_produto(novo_produto)
-```
-
----
-
-## 📁 10. Estrutura do Projeto
-
-```
-exemplo/
-├── main.py             # Rotas da API, configurações de CORS, banner e entrypoint
-├── auth.py             # Lógica JWT, hash bcrypt, dependência de autenticação e rotas /auth
-├── database.py         # Leitura, escrita e persistência nos arquivos JSON (produtos e usuários)
-├── models.py           # Modelos de validação Pydantic (produtos, usuários, login e tokens)
-├── produtos.json       # Base de dados de produtos em formato JSON
-├── usuarios.json       # Base de dados de usuários em formato JSON (senhas em hash bcrypt)
-├── formulario.py       # Módulo para suporte a testes práticos de formulários Web 1
-├── static/             # Tutoriais interativos em HTML (Mobile & Web)
-│   ├── tutorial.html               # Atividade 1: Consumo de API REST (Produtos)
-│   ├── tutorial_notificacoes.html  # Atividade 2: Notificações Push (WebSockets)
-│   └── tutorial_auth.html          # Atividade 3: Autenticação JWT, Login & Cadastro
-├── requirements.txt    # Dependências do projeto (FastAPI, PyJWT, bcrypt, python-multipart, etc.)
-├── build.bat           # Script de geração do .exe para Windows
-├── build.sh            # Script de geração de executável para Linux/macOS
-├── dist/               # Pasta onde o executável final compilado é gerado
-└── README.md           # Guia de uso e dicas para desenvolvimento mobile
-```
+### 5. Deploy no Render
+No painel do Render (ou via `render.yaml`), basta cadastrar as seguintes variáveis de ambiente em **Environment**:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `JWT_SECRET`
+- `PYTHON_VERSION`: `3.11.0`
