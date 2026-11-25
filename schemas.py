@@ -9,14 +9,22 @@ class LoginRequest(BaseModel):
     email: EmailStr = Field(..., example="teste@app.com")
     password: str = Field(..., min_length=1, example="123456")
 
+class RegisterRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=120, example="Maria Silva")
+    email: EmailStr = Field(..., example="maria@estudante.ifms.edu.br")
+    password: str = Field(..., min_length=6, example="123456")
+
 class UserResponse(BaseModel):
     id: int
     name: str
     email: str
 
-class LoginResponse(BaseModel):
+class AuthResponse(BaseModel):
     token: str
     user: UserResponse
+
+# Alias para compatibilidade
+LoginResponse = AuthResponse
 
 # =====================================================================
 # Review Schemas
@@ -52,7 +60,17 @@ class ItemSummary(ItemBase):
 class ItemDetail(ItemSummary):
     reviews: List[ReviewResponse] = []
 
+class PaginationMeta(BaseModel):
+    current_page: int = Field(..., example=1)
+    last_page: int = Field(..., example=5)
+    total: int = Field(..., example=43)
+    limit: int = Field(10, example=10)
+
 class ItemListResponse(BaseModel):
+    # Formato do enunciado do desafio mobile:
+    data: List[ItemSummary]
+    meta: PaginationMeta
+    # Aliases de compatibilidade para quem consumir chaves de primeiro nível:
     items: List[ItemSummary]
     total: int
     page: int

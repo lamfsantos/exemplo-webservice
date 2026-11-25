@@ -56,9 +56,18 @@ async def list_items(
 
     last_page = math.ceil(total / limit) if total > 0 else 1
 
+    meta = {
+        "current_page": page,
+        "last_page": last_page,
+        "total": total,
+        "limit": limit
+    }
+
     if not items_data:
         return {
+            "data": [],
             "items": [],
+            "meta": meta,
             "total": total,
             "page": page,
             "limit": limit,
@@ -116,7 +125,9 @@ async def list_items(
         })
 
     return {
+        "data": summaries,
         "items": summaries,
+        "meta": meta,
         "total": total,
         "page": page,
         "limit": limit,

@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request, HTTPException, status
+from fastapi import FastAPI, Request, HTTPException, status, APIRouter
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -84,11 +84,18 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 async def root_redirect():
     return RedirectResponse(url="/docs")
 
-# Registro dos Routers
+# Registro dos Routers na Raiz e no prefixo /api/v1 (compatibilidade total com o desafio)
+api_v1 = APIRouter(prefix="/api/v1")
+api_v1.include_router(health.router)
+api_v1.include_router(auth.router)
+api_v1.include_router(items.router)
+api_v1.include_router(me.router)
+
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(items.router)
 app.include_router(me.router)
+app.include_router(api_v1)
 
 if __name__ == "__main__":
     import uvicorn

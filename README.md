@@ -36,14 +36,15 @@ O objetivo é desenvolver um aplicativo mobile fluido, bem arquitetado e resilie
 
 ## 🔗 2. Acesso à API & Documentação Interativa (Swagger)
 
-A API disponibiliza uma interface interativa completa via Swagger UI:
+A API está em produção e disponibiliza uma interface interativa completa via Swagger UI:
 
-- **Swagger UI (Documentação Interativa):** `https://SUA-API-NO-RENDER.onrender.com/docs`
-- **ReDoc (Documentação Alternativa):** `https://SUA-API-NO-RENDER.onrender.com/redoc`
-- **Health Check:** `https://SUA-API-NO-RENDER.onrender.com/health`
+- **URL Base:** `https://api-produtos-mobile.onrender.com/api/v1` *(também acessível diretamente na raiz)*
+- **Swagger UI (Documentação Interativa):** `https://api-produtos-mobile.onrender.com/docs`
+- **ReDoc (Documentação Alternativa):** `https://api-produtos-mobile.onrender.com/redoc`
+- **Health Check:** `https://api-produtos-mobile.onrender.com/health`
 
 > 💡 **Como testar pelo Swagger:**
-> 1. Execute a rota `POST /auth/login` com as credenciais de teste abaixo.
+> 1. Execute a rota `POST /auth/login` (ou crie um usuário em `POST /auth/register`).
 > 2. Copie o valor retornado no campo `token`.
 > 3. Clique no botão verde **Authorize** (no topo superior direito da página do Swagger).
 > 4. Cole o token no campo de valor e clique em **Authorize**. Pronto! Todas as rotas autenticadas funcionarão diretamente pelo navegador.
@@ -85,8 +86,39 @@ Content-Type: application/json
 
 ---
 
-### 4.2. Autenticação (Login)
-* **Rota:** `POST /auth/login`
+### 4.2. Cadastro de Novo Aluno (Register)
+* **Rota:** `POST /auth/register` (ou `POST /api/v1/auth/register`)
+* **Autenticação:** Pública.
+* **Corpo da Requisição (JSON):**
+```json
+{
+  "name": "Maria Silva",
+  "email": "maria@estudante.ifms.edu.br",
+  "password": "senha_segura"
+}
+```
+* **Resposta de Sucesso (201 Created):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 6,
+    "name": "Maria Silva",
+    "email": "maria@estudante.ifms.edu.br"
+  }
+}
+```
+* **Resposta de Erro (409 Conflict):**
+```json
+{
+  "error": "E-mail já cadastrado no sistema"
+}
+```
+
+---
+
+### 4.3. Autenticação (Login)
+* **Rota:** `POST /auth/login` (ou `POST /api/v1/auth/login`)
 * **Autenticação:** Pública.
 * **Corpo da Requisição (JSON):**
 ```json
@@ -115,19 +147,40 @@ Content-Type: application/json
 
 ---
 
-### 4.3. Listar Obras do Catálogo
-* **Rota:** `GET /items`
+### 4.4. Perfil do Usuário & Auto-login
+* **Rota:** `GET /auth/me` (ou `GET /api/v1/auth/me`)
+* **Autenticação:** Obrigatória (`Bearer <token>`).
+* **Objetivo:** Utilizada na inicialização do app (Splash Screen) para checar se o token salvo no `flutter_secure_storage` ainda é válido.
+* **Resposta de Sucesso (200 OK):**
+```json
+{
+  "id": 1,
+  "name": "Aluno Teste (Geral)",
+  "email": "teste@app.com"
+}
+```
+* **Resposta se token expirado/inválido (401 Unauthorized):**
+```json
+{
+  "error": "Token inválido ou expirado"
+}
+```
+
+---
+
+### 4.5. Listar Obras do Catálogo
+* **Rota:** `GET /items` (ou `GET /api/v1/items`)
 * **Autenticação:** Obrigatória (`Bearer <token>`).
 * **Parâmetros de Consulta (Query Parameters):**
   * `page` *(inteiro, padrão: 1)*: Número da página atual.
   * `limit` *(inteiro, padrão: 10, máx: 50)*: Quantidade de itens por página.
   * `search` *(texto, opcional)*: Busca que contenha o texto no título (case-insensitive).
-  * `category` *(texto, opcional)*: Filtro por categoria exata (`Ação`, `Drama`, etc.).
-* **Exemplo de Chamada:** `GET /items?page=1&limit=10&category=Ficção Científica&search=Matrix`
+  * `category` *(texto, opcional)*: Filtro por categoria exata (`Ação`, `Drama`, `Animação`, etc.).
+* **Exemplo de Chamada:** `GET /api/v1/items?page=1&limit=10&category=Ficção Científica&search=Matrix`
 * **Resposta de Sucesso (200 OK):**
 ```json
 {
-  "items": [
+  "data": [
     {
       "id": 1,
       "title": "Matrix",
@@ -140,10 +193,12 @@ Content-Type: application/json
       "average_rating": 4.8
     }
   ],
-  "total": 42,
-  "page": 1,
-  "limit": 10,
-  "last_page": 5
+  "meta": {
+    "current_page": 1,
+    "last_page": 5,
+    "total": 43,
+    "limit": 10
+  }
 }
 ```
 
